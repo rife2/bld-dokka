@@ -28,6 +28,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * Builds documentation (javadoc, HTML, etc.) using Dokka.
@@ -37,6 +38,7 @@ import java.util.logging.Logger;
  */
 @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
+    public static final String SEMICOLON = ";";
     private final static String GFM_PLUGIN_REGEXP =
             "^.*(dokka-base|analysis-kotlin-descriptors|gfm-plugin|freemarker).*\\.jar$";
     private final static String HTML_PLUGIN_REGEXP =
@@ -49,8 +51,8 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     private final Map<String, String> globalLinks_ = new ConcurrentHashMap<>();
     private final Collection<String> globalPackageOptions_ = new ArrayList<>();
     private final Collection<String> globalSrcLinks_ = new ArrayList<>();
-    private final Collection<String> includes_ = new ArrayList<>();
-    private final Collection<String> pluginsClasspath_ = new ArrayList<>();
+    private final Collection<File> includes_ = new ArrayList<>();
+    private final Collection<File> pluginsClasspath_ = new ArrayList<>();
     private final Map<String, String> pluginsConfiguration_ = new ConcurrentHashMap<>();
     private boolean delayTemplateSubstitution_;
     private boolean failOnWarning_;
@@ -81,8 +83,8 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param regex     the regular expression to match
      * @return the list of JARs
      */
-    public static List<String> getJarList(File directory, String regex) {
-        var jars = new ArrayList<String>();
+    public static List<File> getJarList(File directory, String regex) {
+        var jars = new ArrayList<File>();
 
         if (directory.isDirectory()) {
             var files = directory.listFiles();
@@ -90,7 +92,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
                 for (var f : files) {
                     if (!f.getName().endsWith("-sources.jar") && (!f.getName().endsWith("-javadoc.jar")) &&
                             f.getName().matches(regex)) {
-                        jars.add(f.getAbsolutePath());
+                        jars.add(f);
                     }
                 }
             }
@@ -146,12 +148,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
 
         // -jar dokka-cli
         args.add("-jar");
-        args.add(cli.get(0));
+        args.add(cli.get(0).getAbsolutePath());
 
         // -pluginClasspath
         if (!pluginsClasspath_.isEmpty()) {
             args.add("-pluginsClasspath");
-            args.add(String.join(";", pluginsClasspath_));
+            args.add(pluginsClasspath_.stream().map(File::getAbsolutePath).collect(Collectors.joining(SEMICOLON)));
         }
 
         // -sourceSet
@@ -195,19 +197,19 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         // -globalPackageOptions
         if (!globalPackageOptions_.isEmpty()) {
             args.add("-globalPackageOptions");
-            args.add(String.join(";", globalPackageOptions_));
+            args.add(String.join(SEMICOLON, globalPackageOptions_));
         }
 
         // -globalSrcLinks
         if (!globalSrcLinks_.isEmpty()) {
             args.add("-globalSrcLinks_");
-            args.add(String.join(";", globalSrcLinks_));
+            args.add(String.join(SEMICOLON, globalSrcLinks_));
         }
 
         // -includes
         if (!includes_.isEmpty()) {
             args.add("-includes");
-            args.add(String.join(";", includes_));
+            args.add(includes_.stream().map(File::getAbsolutePath).collect(Collectors.joining(SEMICOLON)));
         }
 
         // -loggingLevel
@@ -268,7 +270,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * Configures the operation from a {@link BaseProject}.
      * <p>
      * Sets the {@link #sourceSet sourceSet}, {@link SourceSet#jdkVersion jdkVersion}, {@link #moduleName moduleName}
-     * and {@link SourceSet#classpath(String...) classpath} from the project.
+     * and {@link SourceSet#classpath(File...) classpath} from the project.
      *
      * @param project the project to configure the operation from
      */
@@ -276,7 +278,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     public DokkaOperation fromProject(BaseProject project) {
         project_ = project;
         sourceSet_ = new SourceSet()
-                .src(new File(project.srcMainDirectory(), "kotlin").getAbsolutePath())
+                .src(new File(project.srcMainDirectory(), "kotlin"))
                 .classpath(project.compileClasspathJars())
                 .classpath(project.providedClasspathJars());
         if (project.javaRelease() != null) {
@@ -300,6 +302,15 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     public DokkaOperation failOnWarning(Boolean failOnWarning) {
         failOnWarning_ = failOnWarning;
         return this;
+    }
+
+    /**
+     * Retrieves the global external documentation links.
+     *
+     * @return the documentation links
+     */
+    public Map<String, String> globalLinks() {
+        return globalLinks_;
     }
 
     /**
@@ -349,6 +360,15 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
+     * Retrieves the global list of package configurations.
+     *
+     * @return the package configurations
+     */
+    public Collection<String> globalPackageOptions() {
+        return globalPackageOptions_;
+    }
+
+    /**
      * Sets the global list of package configurations.
      * <p>
      * Using format:
@@ -382,6 +402,15 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
+     * Retrieves the global source links
+     *
+     * @return the source links
+     */
+    public Collection<String> globalSrcLink() {
+        return globalSrcLinks_;
+    }
+
+    /**
      * Sets the global mapping between a source directory and a Web service for browsing the code.
      *
      * @param links the links mapping
@@ -402,9 +431,35 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param files one or more files
      * @return this operation instance
      */
-    public DokkaOperation includes(String... files) {
+    public DokkaOperation includes(File... files) {
         Collections.addAll(includes_, files);
         return this;
+    }
+
+    /**
+     * Sets the Markdown files that contain module and package documentation.
+     * <p>
+     * The contents of specified files are parsed and embedded into documentation as module and package descriptions.
+     * <p>
+     * This can be configured on per-package basis.
+     *
+     * @param files one or more files
+     * @return this operation instance
+     */
+    public DokkaOperation includes(String... files) {
+        Collections.addAll(includes_, Arrays.stream(files)
+                .map(File::new)
+                .toArray(File[]::new));
+        return this;
+    }
+
+    /**
+     * Retrieves the markdown files that contain the module and package documentation.
+     *
+     * @return the markdown files
+     */
+    public Collection<File> includes() {
+        return includes_;
     }
 
     /**
@@ -417,7 +472,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param files the list of files
      * @return this operation instance
      */
-    public DokkaOperation includes(Collection<String> files) {
+    public DokkaOperation includes(Collection<File> files) {
         includes_.addAll(files);
         return this;
     }
@@ -584,14 +639,45 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
+     * Retrieves the plugin configurations.
+     *
+     * @return the plugin configurations.
+     */
+    public Map<String, String> pluginConfigurations() {
+        return pluginsConfiguration_;
+    }
+
+    /**
+     * Sets the list of jars with Dokka plugins and their dependencies.
+     *
+     * @param jars one or more jars
+     * @return this operation instance
+     */
+    public DokkaOperation pluginsClasspath(File... jars) {
+        Collections.addAll(pluginsClasspath_, jars);
+        return this;
+    }
+
+    /**
      * Sets the list of jars with Dokka plugins and their dependencies.
      *
      * @param jars one or more jars
      * @return this operation instance
      */
     public DokkaOperation pluginsClasspath(String... jars) {
-        Collections.addAll(pluginsClasspath_, jars);
+        Collections.addAll(pluginsClasspath_, Arrays.stream(jars)
+                .map(File::new)
+                .toArray(File[]::new));
         return this;
+    }
+
+    /**
+     * Retrieves the plugins classpath.
+     *
+     * @return the classpath
+     */
+    public Collection<File> pluginsClasspath() {
+        return pluginsClasspath_;
     }
 
     /**
@@ -600,21 +686,8 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param jars the list of jars
      * @return this operation instance
      */
-    public DokkaOperation pluginsClasspath(Collection<String> jars) {
+    public DokkaOperation pluginsClasspath(Collection<File> jars) {
         pluginsClasspath_.addAll(jars);
-        return this;
-    }
-
-    /**
-     * Clears the list of Dokka plugins.
-     *
-     * @param clear set to clear the list
-     * @return this operation instance
-     */
-    public DokkaOperation pluginsClasspath(boolean clear) {
-        if (clear) {
-            pluginsClasspath_.clear();
-        }
         return this;
     }
 

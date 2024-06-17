@@ -1,7 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="EntryPointsManager">
+    <entry_points version="2.0">
+      <entry_point TYPE="field" FQNAME="rife.bld.extension.dokka.AnalysisPlatform ANDROID" />
+      <entry_point TYPE="field" FQNAME="rife.bld.extension.dokka.AnalysisPlatform COMMON" />
+      <entry_point TYPE="field" FQNAME="rife.bld.extension.dokka.AnalysisPlatform JS" />
+      <entry_point TYPE="field" FQNAME="rife.bld.extension.dokka.AnalysisPlatform NATIVE" />
+      <entry_point TYPE="field" FQNAME="rife.bld.extension.dokka.DocumentedVisibility INTERNAL" />
+      <entry_point TYPE="field" FQNAME="rife.bld.extension.dokka.DocumentedVisibility PROTECTED" />
+      <entry_point TYPE="field" FQNAME="rife.bld.extension.dokka.DocumentedVisibility PUBLIC" />
+      <entry_point TYPE="field" FQNAME="rife.bld.extension.dokka.LoggingLevel ERROR" />
+      <entry_point TYPE="field" FQNAME="rife.bld.extension.dokka.LoggingLevel INFO" />
+      <entry_point TYPE="field" FQNAME="rife.bld.extension.dokka.LoggingLevel PROGRESS" />
+      <entry_point TYPE="field" FQNAME="rife.bld.extension.dokka.LoggingLevel WARN" />
+    </entry_points>
     <pattern value="rife.bld.extension.CompileKotlinOperationBuild" method="pmd" />
+    <pattern value="rife.bld.extension.DokkaOperationBuild" method="pmd" />
+    <pattern value="rife.bld.extension.dokka.AnalysisPlatform" />
+    <pattern value="rife.bld.extension.dokka.DocumentedVisibility" />
+    <pattern value="rife.bld.extension.dokka.LoggingLevel" />
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_17" project-jdk-name="17" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/build" />

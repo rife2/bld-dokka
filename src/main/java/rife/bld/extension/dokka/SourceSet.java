@@ -21,6 +21,7 @@ import rife.bld.extension.DokkaOperation;
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Configuration for a Dokka source set.
@@ -29,17 +30,16 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 1.0
  */
 public class SourceSet {
-    private static final String SEMICOLON = ";";
-    private final Collection<String> classpath_ = new ArrayList<>();
+    private final Collection<File> classpath_ = new ArrayList<>();
     private final Map<String, String> dependentSourceSets_ = new ConcurrentHashMap<>();
     private final Collection<DocumentedVisibility> documentedVisibilities_ = new ArrayList<>();
     private final Map<String, String> externalDocumentationLinks_ = new ConcurrentHashMap<>();
-    private final Collection<String> includes_ = new ArrayList<>();
+    private final Collection<File> includes_ = new ArrayList<>();
     private final Collection<String> perPackageOptions_ = new ArrayList<>();
-    private final Collection<String> samples_ = new ArrayList<>();
+    private final Collection<File> samples_ = new ArrayList<>();
     private final Map<String, String> srcLinks_ = new ConcurrentHashMap<>();
-    private final Collection<String> src_ = new ArrayList<>();
-    private final Collection<String> suppressedFiles_ = new ArrayList<>();
+    private final Collection<File> src_ = new ArrayList<>();
+    private final Collection<File> suppressedFiles_ = new ArrayList<>();
     private AnalysisPlatform analysisPlatform_;
     private String apiVersion_;
     private String displayName_;
@@ -110,7 +110,7 @@ public class SourceSet {
         // -classpath
         if (!classpath_.isEmpty()) {
             args.add("-classpath");
-            args.add(String.join(SEMICOLON, classpath_));
+            args.add(classpath_.stream().map(File::getAbsolutePath).collect(Collectors.joining(DokkaOperation.SEMICOLON)));
         }
 
         // -dependentSourceSets
@@ -118,7 +118,7 @@ public class SourceSet {
             args.add("-dependentSourceSets");
             var deps = new ArrayList<String>();
             dependentSourceSets_.forEach((k, v) -> deps.add(String.format("%s/%s", k, v)));
-            args.add(String.join(SEMICOLON, deps));
+            args.add(String.join(DokkaOperation.SEMICOLON, deps));
         }
 
         // -displayName
@@ -132,7 +132,7 @@ public class SourceSet {
             args.add("-documentedVisibilities");
             var vis = new ArrayList<String>();
             documentedVisibilities_.forEach(d -> vis.add(d.name().toLowerCase()));
-            args.add(String.join(SEMICOLON, vis));
+            args.add(String.join(DokkaOperation.SEMICOLON, vis));
         }
 
         // -externalDocumentationLinks
@@ -152,7 +152,7 @@ public class SourceSet {
         // -includes
         if (!includes_.isEmpty()) {
             args.add("-includes");
-            args.add(String.join(SEMICOLON, includes_));
+            args.add(includes_.stream().map(File::getAbsolutePath).collect(Collectors.joining(DokkaOperation.SEMICOLON)));
         }
 
         // -languageVersion
@@ -188,13 +188,13 @@ public class SourceSet {
         // -perPackageOptions
         if (!perPackageOptions_.isEmpty()) {
             args.add("-perPackageOptions");
-            args.add(String.join(SEMICOLON, perPackageOptions_));
+            args.add(String.join(DokkaOperation.SEMICOLON, perPackageOptions_));
         }
 
         // -samples
         if (!samples_.isEmpty()) {
             args.add("-samples");
-            args.add(String.join(SEMICOLON, samples_));
+            args.add(samples_.stream().map(File::getAbsolutePath).collect(Collectors.joining(DokkaOperation.SEMICOLON)));
         }
 
         // -skipDeprecated
@@ -206,7 +206,7 @@ public class SourceSet {
         // -src
         if (!src_.isEmpty()) {
             args.add("-src");
-            args.add(String.join(SEMICOLON, src_));
+            args.add(src_.stream().map(File::getAbsolutePath).collect(Collectors.joining(DokkaOperation.SEMICOLON)));
         }
 
         // -srcLink
@@ -214,7 +214,7 @@ public class SourceSet {
             args.add("-srcLink");
             var links = new ArrayList<String>();
             srcLinks_.forEach((k, v) -> links.add(String.format("%s=%s", k, v)));
-            args.add(String.join(SEMICOLON, links));
+            args.add(String.join(DokkaOperation.SEMICOLON, links));
         }
 
         // -sourceSetName
@@ -226,7 +226,7 @@ public class SourceSet {
         // -suppressedFiles
         if (!suppressedFiles_.isEmpty()) {
             args.add("-suppressedFiles");
-            args.add(String.join(SEMICOLON, suppressedFiles_));
+            args.add(suppressedFiles_.stream().map(File::getAbsolutePath).collect(Collectors.joining(DokkaOperation.SEMICOLON)));
         }
 
         return args;
@@ -242,7 +242,7 @@ public class SourceSet {
      * @param files one or more file
      * @return this operation instance
      */
-    public SourceSet classpath(String... files) {
+    public SourceSet classpath(File... files) {
         Collections.addAll(classpath_, files);
         return this;
     }
@@ -254,11 +254,13 @@ public class SourceSet {
      * <p>
      * This option accepts both {@code .jar} and {@code .klib} files.
      *
-     * @param files the list of files
+     * @param files one or more file
      * @return this operation instance
      */
-    public SourceSet classpath(Collection<String> files) {
-        classpath_.addAll(files);
+    public SourceSet classpath(String... files) {
+        Collections.addAll(classpath_, Arrays.stream(files)
+                .map(File::new)
+                .toArray(File[]::new));
         return this;
     }
 
@@ -272,9 +274,18 @@ public class SourceSet {
      * @param files the list of files
      * @return this operation instance
      */
-    public SourceSet classpath(List<File> files) {
-        files.forEach(it -> classpath_.add(it.getAbsolutePath()));
+    public SourceSet classpath(Collection<File> files) {
+        classpath_.addAll(files);
         return this;
+    }
+
+    /**
+     * Retrieves the classpath for analysis and interactive samples.
+     *
+     * @return the classpath
+     */
+    public Collection<File> classpath() {
+        return classpath_;
     }
 
     /**
@@ -287,6 +298,15 @@ public class SourceSet {
     public SourceSet dependentSourceSets(String moduleName, String sourceSetName) {
         dependentSourceSets_.put(moduleName, sourceSetName);
         return this;
+    }
+
+    /**
+     * Retrieves the names of dependent source sets.
+     *
+     * @return the names
+     */
+    public Map<String, String> dependentSourceSets() {
+        return dependentSourceSets_;
     }
 
     /**
@@ -334,6 +354,15 @@ public class SourceSet {
     }
 
     /**
+     * Retrieves the visibilities to be documented.
+     *
+     * @return the documented visibilities
+     */
+    public Collection<DocumentedVisibility> documentedVisibilities() {
+        return documentedVisibilities_;
+    }
+
+    /**
      * Sets the external documentation links.
      * <p>
      * A set of parameters for external documentation links that is applied only for this source set.
@@ -345,6 +374,15 @@ public class SourceSet {
     public SourceSet externalDocumentationLinks(String url, String packageListUrl) {
         externalDocumentationLinks_.put(url, packageListUrl);
         return this;
+    }
+
+    /**
+     * Retrieves the external documentation links.
+     *
+     * @return the documentation links.
+     */
+    public Map<String, String> externalDocumentationLinks() {
+        return externalDocumentationLinks_;
     }
 
     /**
@@ -372,9 +410,36 @@ public class SourceSet {
      * @param files one or more files
      * @return this operation instance
      */
-    public SourceSet includes(String... files) {
+    public SourceSet includes(File... files) {
         Collections.addAll(includes_, files);
         return this;
+    }
+
+    /**
+     * Sets the Markdown files that contain module and package documentation.
+     * <p>
+     * A list of Markdown files that contain module and package documentation.
+     * <p>
+     * The contents of the specified files are parsed and embedded into documentation as module and package
+     * descriptions.
+     *
+     * @param files one or more files
+     * @return this operation instance
+     */
+    public SourceSet includes(String... files) {
+        Collections.addAll(includes_, Arrays.stream(files)
+                .map(File::new)
+                .toArray(File[]::new));
+        return this;
+    }
+
+    /**
+     * Retrieves the Markdown files that contain module and package documentation.
+     *
+     * @return the markdown files
+     */
+    public Collection<File> includes() {
+        return includes_;
     }
 
     /**
@@ -388,7 +453,7 @@ public class SourceSet {
      * @param files the list of files
      * @return this operation instance
      */
-    public SourceSet includes(Collection<String> files) {
+    public SourceSet includes(Collection<File> files) {
         includes_.addAll(files);
         return this;
     }
@@ -518,6 +583,15 @@ public class SourceSet {
     }
 
     /**
+     * Retrieves the list of package source set configuration.
+     *
+     * @return the package source set configuration
+     */
+    public Collection<String> perPackageOptions() {
+        return perPackageOptions_;
+    }
+
+    /**
      * Set the list of package source set configuration.
      * <p>
      * A set of parameters specific to matched packages within this source set.
@@ -568,8 +642,31 @@ public class SourceSet {
      * @param samples the list of samples
      * @return this operation instance
      */
-    public SourceSet samples(Collection<String> samples) {
+    public SourceSet samples(Collection<File> samples) {
         samples_.addAll(samples);
+        return this;
+    }
+
+    /**
+     * Retrieves the list of directories or files that contain sample functions.
+     *
+     * @return the directories or files
+     */
+    public Collection<File> samples() {
+        return samples_;
+    }
+
+    /**
+     * Set the list of directories or files that contain sample functions.
+     * <p>
+     * A list of directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
+     * tag.
+     *
+     * @param samples nne or more samples
+     * @return this operation instance
+     */
+    public SourceSet samples(File... samples) {
+        Collections.addAll(samples_, samples);
         return this;
     }
 
@@ -583,7 +680,9 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet samples(String... samples) {
-        Collections.addAll(samples_, samples);
+        Collections.addAll(samples_, Arrays.stream(samples)
+                .map(File::new)
+                .toArray(File[]::new));
         return this;
     }
 
@@ -622,7 +721,7 @@ public class SourceSet {
      * @param src the list of source code roots
      * @return this operation instance
      */
-    public SourceSet src(Collection<String> src) {
+    public SourceSet src(Collection<File> src) {
         src_.addAll(src);
         return this;
     }
@@ -636,9 +735,34 @@ public class SourceSet {
      * @param src pne ore moe source code roots
      * @return this operation instance
      */
-    public SourceSet src(String... src) {
+    public SourceSet src(File... src) {
         Collections.addAll(src_, src);
         return this;
+    }
+
+    /**
+     * Sets the source code roots to be analyzed and documented.
+     * <p>
+     * The source code roots to be analyzed and documented. Acceptable inputs are directories and individual
+     * {@code .kt} / {@code .java} files.
+     *
+     * @param src pne ore moe source code roots
+     * @return this operation instance
+     */
+    public SourceSet src(String... src) {
+        Collections.addAll(src_, Arrays.stream(src)
+                .map(File::new)
+                .toArray(File[]::new));
+        return this;
+    }
+
+    /**
+     * Retrieves the source code roots to be analyzed and documented.
+     *
+     * @return the source code roots
+     */
+    public Collection<File> src() {
+        return src_;
     }
 
     /**
@@ -655,6 +779,28 @@ public class SourceSet {
     }
 
     /**
+     * Sets the mapping between a source directory and a Web service for browsing the code.
+     *
+     * @param srcPath    the source path
+     * @param remotePath the remote path
+     * @param lineSuffix the line suffix
+     * @return this operation instance
+     */
+    public SourceSet srcLink(File srcPath, String remotePath, String lineSuffix) {
+        srcLinks_.put(srcPath.getAbsolutePath(), remotePath + lineSuffix);
+        return this;
+    }
+
+    /**
+     * Retrieves the mapping between a source directory and a Web service for browsing the code.
+     *
+     * @return the source links
+     */
+    public Map<String, String> srcLinks() {
+        return srcLinks_;
+    }
+
+    /**
      * Sets the paths to files to be suppressed.
      * <p>
      * The files to be suppressed when generating documentation.
@@ -662,9 +808,19 @@ public class SourceSet {
      * @param suppressedFiles the list of suppressed files
      * @return this operation instance
      */
-    public SourceSet suppressedFiles(Collection<String> suppressedFiles) {
+    public SourceSet suppressedFiles(Collection<File> suppressedFiles) {
         suppressedFiles_.addAll(suppressedFiles);
         return this;
+    }
+
+
+    /**
+     * Retrieves the paths to files to be suppressed.
+     *
+     * @return the paths
+     */
+    public Collection<File> suppressedFiles() {
+        return suppressedFiles_;
     }
 
     /**
@@ -676,6 +832,21 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet suppressedFiles(String... suppressedFiles) {
+        Collections.addAll(suppressedFiles_, Arrays.stream(suppressedFiles)
+                .map(File::new)
+                .toArray(File[]::new));
+        return this;
+    }
+
+    /**
+     * Sets the paths to files to be suppressed.
+     * <p>
+     * The files to be suppressed when generating documentation.
+     *
+     * @param suppressedFiles one or moe suppressed files
+     * @return this operation instance
+     */
+    public SourceSet suppressedFiles(File... suppressedFiles) {
         suppressedFiles_.addAll(Arrays.asList(suppressedFiles));
         return this;
     }
