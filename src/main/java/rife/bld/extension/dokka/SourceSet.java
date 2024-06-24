@@ -243,7 +243,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet classpath(File... files) {
-        Collections.addAll(classpath_, files);
+        classpath_.addAll(List.of(files));
         return this;
     }
 
@@ -258,9 +258,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet classpath(String... files) {
-        Collections.addAll(classpath_, Arrays.stream(files)
-                .map(File::new)
-                .toArray(File[]::new));
+        classpath_.addAll(Arrays.stream(files).map(File::new).toList());
         return this;
     }
 
@@ -271,7 +269,7 @@ public class SourceSet {
      * <p>
      * This option accepts both {@code .jar} and {@code .klib} files.
      *
-     * @param files the list of files
+     * @param files the collection of files
      * @return this operation instance
      */
     public SourceSet classpath(Collection<File> files) {
@@ -349,7 +347,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet documentedVisibilities(DocumentedVisibility... visibilities) {
-        documentedVisibilities_.addAll(Arrays.asList(visibilities));
+        documentedVisibilities_.addAll(List.of(visibilities));
         return this;
     }
 
@@ -402,7 +400,7 @@ public class SourceSet {
     /**
      * Sets the Markdown files that contain module and package documentation.
      * <p>
-     * A list of Markdown files that contain module and package documentation.
+     * The Markdown files that contain module and package documentation.
      * <p>
      * The contents of the specified files are parsed and embedded into documentation as module and package
      * descriptions.
@@ -411,14 +409,14 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet includes(File... files) {
-        Collections.addAll(includes_, files);
+        includes_.addAll(List.of(files));
         return this;
     }
 
     /**
      * Sets the Markdown files that contain module and package documentation.
      * <p>
-     * A list of Markdown files that contain module and package documentation.
+     * The Markdown files that contain module and package documentation.
      * <p>
      * The contents of the specified files are parsed and embedded into documentation as module and package
      * descriptions.
@@ -427,9 +425,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet includes(String... files) {
-        Collections.addAll(includes_, Arrays.stream(files)
-                .map(File::new)
-                .toArray(File[]::new));
+        includes_.addAll(Arrays.stream(files).map(File::new).toList());
         return this;
     }
 
@@ -445,12 +441,12 @@ public class SourceSet {
     /**
      * Sets the Markdown files that contain module and package documentation.
      * <p>
-     * A list of Markdown files that contain module and package documentation.
+     * The Markdown files that contain module and package documentation.
      * <p>
      * The contents of the specified files are parsed and embedded into documentation as module and package
      * descriptions.
      *
-     * @param files the list of files
+     * @param files the collection of files
      * @return this operation instance
      */
     public SourceSet includes(Collection<File> files) {
@@ -559,7 +555,7 @@ public class SourceSet {
     }
 
     /**
-     * Set the list of package source set configuration.
+     * Set the package source set configuration.
      * <p>
      * A set of parameters specific to matched packages within this source set.
      * <p>
@@ -574,7 +570,7 @@ public class SourceSet {
      * <li>...</li>
      * </ul>
      *
-     * @param perPackageOptions the list of per package options
+     * @param perPackageOptions the per package options
      * @return this operation instance
      */
     public SourceSet perPackageOptions(Collection<String> perPackageOptions) {
@@ -583,7 +579,7 @@ public class SourceSet {
     }
 
     /**
-     * Retrieves the list of package source set configuration.
+     * Retrieves the package source set configuration.
      *
      * @return the package source set configuration
      */
@@ -592,7 +588,7 @@ public class SourceSet {
     }
 
     /**
-     * Set the list of package source set configuration.
+     * Set the package source set configuration.
      * <p>
      * A set of parameters specific to matched packages within this source set.
      * <p>
@@ -607,11 +603,11 @@ public class SourceSet {
      * <li>...</li>
      * </ul>
      *
-     * @param perPackageOptions the list of per package options
+     * @param perPackageOptions the per package options
      * @return this operation instance
      */
     public SourceSet perPackageOptions(String... perPackageOptions) {
-        Collections.addAll(perPackageOptions_, perPackageOptions);
+        perPackageOptions_.addAll(List.of(perPackageOptions));
         return this;
     }
 
@@ -634,12 +630,12 @@ public class SourceSet {
     }
 
     /**
-     * Set the list of directories or files that contain sample functions.
+     * Set the directories or files that contain sample functions.
      * <p>
-     * A list of directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
+     * The directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
      * tag.
      *
-     * @param samples the list of samples
+     * @param samples the samples
      * @return this operation instance
      */
     public SourceSet samples(Collection<File> samples) {
@@ -648,7 +644,7 @@ public class SourceSet {
     }
 
     /**
-     * Retrieves the list of directories or files that contain sample functions.
+     * Retrieves the directories or files that contain sample functions.
      *
      * @return the directories or files
      */
@@ -657,32 +653,30 @@ public class SourceSet {
     }
 
     /**
-     * Set the list of directories or files that contain sample functions.
+     * Set the directories or files that contain sample functions.
      * <p>
-     * A list of directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
+     * The directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
      * tag.
      *
      * @param samples nne or more samples
      * @return this operation instance
      */
     public SourceSet samples(File... samples) {
-        Collections.addAll(samples_, samples);
+        samples_.addAll(List.of(samples));
         return this;
     }
 
     /**
-     * Set the list of directories or files that contain sample functions.
+     * Set the directories or files that contain sample functions.
      * <p>
-     * A list of directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
+     * The directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
      * tag.
      *
      * @param samples nne or more samples
      * @return this operation instance
      */
     public SourceSet samples(String... samples) {
-        Collections.addAll(samples_, Arrays.stream(samples)
-                .map(File::new)
-                .toArray(File[]::new));
+        samples_.addAll(Arrays.stream(samples).map(File::new).toList());
         return this;
     }
 
@@ -718,7 +712,7 @@ public class SourceSet {
      * The source code roots to be analyzed and documented. Acceptable inputs are directories and individual
      * {@code .kt} / {@code .java} files.
      *
-     * @param src the list of source code roots
+     * @param src the source code roots
      * @return this operation instance
      */
     public SourceSet src(Collection<File> src) {
@@ -736,7 +730,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet src(File... src) {
-        Collections.addAll(src_, src);
+        src_.addAll(List.of(src));
         return this;
     }
 
@@ -750,9 +744,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet src(String... src) {
-        Collections.addAll(src_, Arrays.stream(src)
-                .map(File::new)
-                .toArray(File[]::new));
+        src_.addAll(Arrays.stream(src).map(File::new).toList());
         return this;
     }
 
@@ -805,7 +797,7 @@ public class SourceSet {
      * <p>
      * The files to be suppressed when generating documentation.
      *
-     * @param suppressedFiles the list of suppressed files
+     * @param suppressedFiles the suppressed files
      * @return this operation instance
      */
     public SourceSet suppressedFiles(Collection<File> suppressedFiles) {
@@ -832,9 +824,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet suppressedFiles(String... suppressedFiles) {
-        Collections.addAll(suppressedFiles_, Arrays.stream(suppressedFiles)
-                .map(File::new)
-                .toArray(File[]::new));
+        suppressedFiles_.addAll(Arrays.stream(suppressedFiles).map(File::new).toList());
         return this;
     }
 
@@ -847,7 +837,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet suppressedFiles(File... suppressedFiles) {
-        suppressedFiles_.addAll(Arrays.asList(suppressedFiles));
+        suppressedFiles_.addAll(List.of(suppressedFiles));
         return this;
     }
 }

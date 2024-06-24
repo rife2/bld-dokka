@@ -56,7 +56,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     private final Map<String, String> pluginsConfiguration_ = new ConcurrentHashMap<>();
     private boolean delayTemplateSubstitution_;
     private boolean failOnWarning_;
-    private File json;
+    private File json_;
     private LoggingLevel loggingLevel_;
     private String moduleName_;
     private String moduleVersion_;
@@ -77,11 +77,11 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
-     * Returns the list of JARs contained in a given directory.
+     * Returns the JARs contained in a given directory.
      *
      * @param directory the directory
      * @param regex     the regular expression to match
-     * @return the list of JARs
+     * @return the Java Archives
      */
     public static List<File> getJarList(File directory, String regex) {
         var jars = new ArrayList<File>();
@@ -255,8 +255,8 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         }
 
         // json
-        if (json != null) {
-            args.add(json.getAbsolutePath());
+        if (json_ != null) {
+            args.add(json_.getAbsolutePath());
         }
 
         if (LOGGER.isLoggable(Level.FINE)) {
@@ -338,7 +338,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
-     * Sets the global list of package configurations.
+     * Sets the global package configurations.
      * <p>
      * Using format:
      * <ul>
@@ -355,12 +355,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      */
     public DokkaOperation globalPackageOptions(String... options) {
-        Collections.addAll(globalPackageOptions_, options);
+        globalPackageOptions_.addAll(List.of(options));
         return this;
     }
 
     /**
-     * Retrieves the global list of package configurations.
+     * Retrieves the global package configurations.
      *
      * @return the package configurations
      */
@@ -369,7 +369,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
-     * Sets the global list of package configurations.
+     * Sets the global package configurations.
      * <p>
      * Using format:
      * <ul>
@@ -382,7 +382,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * <li>...</li>
      * </ul>
      *
-     * @param options the list of package configurations
+     * @param options the package configurations
      * @return this operation instance
      */
     public DokkaOperation globalPackageOptions(Collection<String> options) {
@@ -397,7 +397,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      */
     public DokkaOperation globalSrcLink(String... links) {
-        Collections.addAll(globalSrcLinks_, links);
+        globalSrcLinks_.addAll(List.of(links));
         return this;
     }
 
@@ -432,7 +432,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      */
     public DokkaOperation includes(File... files) {
-        Collections.addAll(includes_, files);
+        includes_.addAll(List.of(files));
         return this;
     }
 
@@ -447,9 +447,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      */
     public DokkaOperation includes(String... files) {
-        Collections.addAll(includes_, Arrays.stream(files)
-                .map(File::new)
-                .toArray(File[]::new));
+        includes_.addAll(Arrays.stream(files).map(File::new).toList());
         return this;
     }
 
@@ -469,7 +467,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * <p>
      * This can be configured on per-package basis.
      *
-     * @param files the list of files
+     * @param files the markdown files
      * @return this operation instance
      */
     public DokkaOperation includes(Collection<File> files) {
@@ -483,7 +481,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param configuration the configuration file path
      */
     public DokkaOperation json(File configuration) {
-        json = configuration;
+        json_ = configuration;
         return this;
     }
 
@@ -648,26 +646,24 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
-     * Sets the list of jars with Dokka plugins and their dependencies.
+     * Sets the jars for Dokka plugins and their dependencies.
      *
      * @param jars one or more jars
      * @return this operation instance
      */
     public DokkaOperation pluginsClasspath(File... jars) {
-        Collections.addAll(pluginsClasspath_, jars);
+        pluginsClasspath_.addAll(List.of(jars));
         return this;
     }
 
     /**
-     * Sets the list of jars with Dokka plugins and their dependencies.
+     * Sets the jars for Dokka plugins and their dependencies.
      *
      * @param jars one or more jars
      * @return this operation instance
      */
     public DokkaOperation pluginsClasspath(String... jars) {
-        Collections.addAll(pluginsClasspath_, Arrays.stream(jars)
-                .map(File::new)
-                .toArray(File[]::new));
+        pluginsClasspath_.addAll(Arrays.stream(jars).map(File::new).toList());
         return this;
     }
 
@@ -681,9 +677,9 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
-     * Sets the list of jars with Dokka plugins and their dependencies.
+     * Sets the jars for Dokka plugins and their dependencies.
      *
-     * @param jars the list of jars
+     * @param jars the jars
      * @return this operation instance
      */
     public DokkaOperation pluginsClasspath(Collection<File> jars) {
