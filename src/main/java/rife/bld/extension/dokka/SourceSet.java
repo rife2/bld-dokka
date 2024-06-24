@@ -164,25 +164,21 @@ public class SourceSet {
         // -noJdkLink
         if (noJdkLink_) {
             args.add("-noJdkLink");
-            args.add(String.valueOf(noJdkLink_));
         }
 
         // -noSkipEmptyPackages
         if (noSkipEmptyPackages_) {
             args.add("-noSkipEmptyPackages");
-            args.add(String.valueOf(noSkipEmptyPackages_));
         }
 
         // -noStdlibLink
         if (noStdlibLink_) {
             args.add("-noStdlibLink");
-            args.add(String.valueOf(noStdlibLink_));
         }
 
         // -reportUndocumented
         if (reportUndocumented_) {
             args.add("-reportUndocumented");
-            args.add(String.valueOf(reportUndocumented_));
         }
 
         // -perPackageOptions
@@ -200,7 +196,6 @@ public class SourceSet {
         // -skipDeprecated
         if (skipDeprecated_) {
             args.add("-skipDeprecated");
-            args.add(String.valueOf(skipDeprecated_));
         }
 
         // -src
