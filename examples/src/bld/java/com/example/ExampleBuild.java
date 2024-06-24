@@ -48,14 +48,14 @@ public class ExampleBuild extends Project {
 
     public static void main(String[] args) {
         // Enable detailed logging for the Kotlin extension
-//        var level = Level.ALL;
-//        var logger = Logger.getLogger("rife.bld.extension");
-//        var consoleHandler = new ConsoleHandler();
-//
-//        consoleHandler.setLevel(level);
-//        logger.addHandler(consoleHandler);
-//        logger.setLevel(level);
-//        logger.setUseParentHandlers(false);
+        var level = Level.ALL;
+        var logger = Logger.getLogger("rife.bld.extension");
+        var consoleHandler = new ConsoleHandler();
+
+        consoleHandler.setLevel(level);
+        logger.addHandler(consoleHandler);
+        logger.setLevel(level);
+        logger.setUseParentHandlers(false);
 
         new ExampleBuild().start(args);
     }

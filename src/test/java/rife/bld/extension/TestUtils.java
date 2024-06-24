@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
 import static rife.bld.extension.DokkaOperation.SEMICOLON;
 
 @SuppressWarnings("PMD.TestClassWithoutTestCases")
-public final class TestUtil {
-    private TestUtil() {
+public final class TestUtils {
+    private TestUtils() {
         // no-op
     }
 
@@ -35,6 +35,6 @@ public final class TestUtil {
      * @return the local path
      */
     public static String localPath(String... fileNames) {
-        return Arrays.stream(fileNames).map(it -> new File(it).getAbsolutePath()).collect(Collectors.joining(SEMICOLON));
+        return Arrays.stream(fileNames).map(f -> new File(f).getAbsolutePath()).collect(Collectors.joining(SEMICOLON));
     }
 }

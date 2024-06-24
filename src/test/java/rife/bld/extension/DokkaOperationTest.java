@@ -34,8 +34,20 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class DokkaOperationTest {
+    private static final String FILE_1 = "file1";
+    private static final String FILE_2 = "file2";
+    private static final String FILE_3 = "file3";
+    private static final String FILE_4 = "file4";
+    private static final String OPTION_1 = "option1";
+    private static final String OPTION_2 = "option2";
+    private static final String OPTION_3 = "option3";
+    private static final String OPTION_4 = "option4";
+    private static final String PATH_1 = "path1";
+    private static final String PATH_2 = "path2";
+    private static final String PATH_3 = "path3";
+    private static final String PATH_4 = "path4";
+
     @Test
-    @SuppressWarnings({"PMD.AvoidDuplicateLiterals"})
     void executeConstructProcessCommandListTest() throws IOException {
         var args = Files.readAllLines(Paths.get("src", "test", "resources", "dokka-args.txt"));
 
@@ -47,15 +59,15 @@ class DokkaOperationTest {
                 .delayTemplateSubstitution(true)
                 .failOnWarning(true)
                 .fromProject(new BaseProjectBlueprint(examples, "com.example", "Example"))
-                .globalLinks("s", "link")
-                .globalLinks(Map.of("s2", "link2"))
-                .globalPackageOptions("option1", "option2")
-                .globalPackageOptions(List.of("option3", "option4"))
+                .globalLinks("s", "gLink1")
+                .globalLinks(Map.of("s2", "gLink2"))
+                .globalPackageOptions(OPTION_1, OPTION_2)
+                .globalPackageOptions(List.of(OPTION_3, OPTION_4))
                 .globalSrcLink("link1", "link2")
                 .globalSrcLink(List.of("link3", "link4"))
-                .includes(new File("file1"))
-                .includes("file2")
-                .includes(List.of(new File("file3"), new File("file4")))
+                .includes(new File(FILE_1))
+                .includes(FILE_2)
+                .includes(List.of(new File(FILE_3), new File(FILE_4)))
                 .json(jsonConf)
                 .loggingLevel(LoggingLevel.DEBUG)
                 .moduleName("name")
@@ -66,9 +78,9 @@ class DokkaOperationTest {
                 .outputFormat(OutputFormat.JAVADOC)
                 .pluginConfigurations("name", "{\"json\"}")
                 .pluginConfigurations(Map.of("{\"name2\"}", "json2", "name3}", "{json3"))
-                .pluginsClasspath(new File("path1"))
-                .pluginsClasspath("path2")
-                .pluginsClasspath(List.of(new File("path3"), new File("path4")))
+                .pluginsClasspath(new File(PATH_1))
+                .pluginsClasspath(PATH_2)
+                .pluginsClasspath(List.of(new File(PATH_3), new File(PATH_4)))
                 .sourceSet(new SourceSet().classpath(
                         List.of(
                                 new File("examples/foo.jar"),
@@ -104,16 +116,16 @@ class DokkaOperationTest {
                         path + "/lib/bld/javadoc-plugin-" + dokkaJar + ';' +
                         path + "/lib/bld/korte-jvm-4.0.10.jar;" +
                         path + "/lib/bld/kotlin-as-java-plugin-" + dokkaJar + ';' +
-                        TestUtil.localPath("path1", "path2", "path3", "path4"),
+                        TestUtils.localPath(PATH_1, PATH_2, PATH_3, PATH_4),
                 "-sourceSet", "-src " + path + "/src/main/kotlin" + " -classpath " + path + "/foo.jar;"
                         + path + "/bar.jar",
                 "-outputDir", path + "/build",
                 "-delayTemplateSubstitution",
                 "-failOnWarning",
-                "-globalLinks", "s^link^^s2^link2",
-                "-globalPackageOptions", "option1;option2;option3;option4",
+                "-globalLinks", "s^gLink1^^s2^gLink2",
+                "-globalPackageOptions", OPTION_1 + ';' + OPTION_2 + ';' + OPTION_3 + ';' + OPTION_4,
                 "-globalSrcLinks_", "link1;link2;link3;link4",
-                "-includes", TestUtil.localPath("file1", "file2", "file3", "file4"),
+                "-includes", TestUtils.localPath(FILE_1, FILE_2, FILE_3, FILE_4),
                 "-loggingLevel", "debug",
                 "-moduleName", "name",
                 "-moduleVersion", "1.0",
