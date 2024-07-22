@@ -21,9 +21,11 @@ import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
 import rife.bld.extension.dokka.SourceSet;
 import rife.bld.operations.AbstractProcessOperation;
+import rife.bld.operations.exceptions.ExitStatusException;
 import rife.tools.StringUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -78,6 +80,8 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
 
     /**
      * Returns the JARs contained in a given directory.
+     * <p>
+     * Sources and Javadoc JARs are ignored.
      *
      * @param directory the directory
      * @param regex     the regular expression to match
@@ -124,6 +128,18 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         return this;
     }
 
+    @Override
+    public void execute() throws IOException, InterruptedException, ExitStatusException {
+        if (project_ == null) {
+            if (LOGGER.isLoggable(Level.SEVERE) && !silent()) {
+                LOGGER.severe("A project must be specified.");
+            }
+            throw new ExitStatusException(ExitStatusException.EXIT_FAILURE);
+        } else {
+            super.execute();
+        }
+    }
+
     /**
      * Part of the {@link #execute execute} operation, constructs the command list to use for building the process.
      *
@@ -131,136 +147,134 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      */
     @Override
     protected List<String> executeConstructProcessCommandList() {
-        if (project_ == null) {
-            throw new IllegalArgumentException("A project must be specified.");
-        }
-
         final List<String> args = new ArrayList<>();
 
-        // java
-        args.add(javaTool());
+        if (project_ != null) {
+            // java
+            args.add(javaTool());
 
-        var cli = getJarList(project_.libBldDirectory(), "^.*dokka-cli.*\\.jar$");
-
-        if (cli.size() != 1) {
-            throw new RuntimeException("The dokka-cli JAR could not be found.");
-        }
-
-        // -jar dokka-cli
-        args.add("-jar");
-        args.add(cli.get(0).getAbsolutePath());
-
-        // -pluginClasspath
-        if (!pluginsClasspath_.isEmpty()) {
-            args.add("-pluginsClasspath");
-            args.add(pluginsClasspath_.stream().map(File::getAbsolutePath).collect(Collectors.joining(SEMICOLON)));
-        }
-
-        // -sourceSet
-        var sourceSetArgs = sourceSet_.args();
-        if (sourceSetArgs.isEmpty()) {
-            throw new IllegalArgumentException("At least one sourceSet is required.");
-        } else {
-            args.add("-sourceSet");
-            args.add(String.join(" ", sourceSet_.args()));
-        }
-
-        // -outputDir
-        if (outputDir_ != null) {
-            if (!outputDir_.exists() && !outputDir_.mkdirs()) {
-                throw new RuntimeException("Could not create: " + outputDir_.getAbsolutePath());
+            var jarList = getJarList(project_.libBldDirectory(), "^.*dokka-cli.*\\.jar$");
+            if (!jarList.isEmpty()) {
+                // class path
+                args.add("-cp");
+                args.add(jarList.stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
             }
 
-            args.add("-outputDir");
-            args.add(outputDir_.getAbsolutePath());
-        }
+            // main class
+            args.add("org.jetbrains.dokka.MainKt");
 
-        // -delayTemplateSubstitution
-        if (delayTemplateSubstitution_) {
-            args.add("-delayTemplateSubstitution");
-        }
+            // -pluginClasspath
+            if (!pluginsClasspath_.isEmpty()) {
+                args.add("-pluginsClasspath");
+                args.add(pluginsClasspath_.stream().map(File::getAbsolutePath).collect(Collectors.joining(SEMICOLON)));
+            }
 
-        // -failOnWarning
-        if (failOnWarning_) {
-            args.add("-failOnWarning");
-        }
+            // -sourceSet
+            var sourceSetArgs = sourceSet_.args();
+            if (sourceSetArgs.isEmpty()) {
+                throw new IllegalArgumentException("At least one sourceSet is required.");
+            } else {
+                args.add("-sourceSet");
+                args.add(String.join(" ", sourceSet_.args()));
+            }
 
-        // -globalLinks_
-        if (!globalLinks_.isEmpty()) {
-            args.add("-globalLinks");
-            var links = new ArrayList<String>();
-            globalLinks_.forEach((k, v) ->
-                    links.add(String.format("%s^%s", k, v)));
-            args.add(String.join("^^", links));
-        }
+            // -outputDir
+            if (outputDir_ != null) {
+                if (!outputDir_.exists() && !outputDir_.mkdirs()) {
+                    throw new RuntimeException("Could not create: " + outputDir_.getAbsolutePath());
+                }
 
-        // -globalPackageOptions
-        if (!globalPackageOptions_.isEmpty()) {
-            args.add("-globalPackageOptions");
-            args.add(String.join(SEMICOLON, globalPackageOptions_));
-        }
+                args.add("-outputDir");
+                args.add(outputDir_.getAbsolutePath());
+            }
 
-        // -globalSrcLinks
-        if (!globalSrcLinks_.isEmpty()) {
-            args.add("-globalSrcLinks_");
-            args.add(String.join(SEMICOLON, globalSrcLinks_));
-        }
+            // -delayTemplateSubstitution
+            if (delayTemplateSubstitution_) {
+                args.add("-delayTemplateSubstitution");
+            }
 
-        // -includes
-        if (!includes_.isEmpty()) {
-            args.add("-includes");
-            args.add(includes_.stream().map(File::getAbsolutePath).collect(Collectors.joining(SEMICOLON)));
-        }
+            // -failOnWarning
+            if (failOnWarning_) {
+                args.add("-failOnWarning");
+            }
 
-        // -loggingLevel
-        if (loggingLevel_ != null) {
-            args.add("-loggingLevel");
-            args.add(loggingLevel_.name().toLowerCase());
-        }
+            // -globalLinks_
+            if (!globalLinks_.isEmpty()) {
+                args.add("-globalLinks");
+                var links = new ArrayList<String>();
+                globalLinks_.forEach((k, v) ->
+                        links.add(String.format("%s^%s", k, v)));
+                args.add(String.join("^^", links));
+            }
 
-        // -moduleName
-        if (isNotBlank(moduleName_)) {
-            args.add("-moduleName");
-            args.add(moduleName_);
-        }
+            // -globalPackageOptions
+            if (!globalPackageOptions_.isEmpty()) {
+                args.add("-globalPackageOptions");
+                args.add(String.join(SEMICOLON, globalPackageOptions_));
+            }
 
-        // -moduleVersion
-        if (isNotBlank(moduleVersion_)) {
-            args.add("-moduleVersion");
-            args.add(moduleVersion_);
-        }
+            // -globalSrcLinks
+            if (!globalSrcLinks_.isEmpty()) {
+                args.add("-globalSrcLinks_");
+                args.add(String.join(SEMICOLON, globalSrcLinks_));
+            }
 
-        // -noSuppressObviousFunctions
-        if (noSuppressObviousFunctions_) {
-            args.add("-noSuppressObviousFunctions");
-        }
+            // -includes
+            if (!includes_.isEmpty()) {
+                args.add("-includes");
+                args.add(includes_.stream().map(File::getAbsolutePath).collect(Collectors.joining(SEMICOLON)));
+            }
 
-        // -offlineMode
-        if (offlineMode_) {
-            args.add("-offlineMode");
-        }
+            // -loggingLevel
+            if (loggingLevel_ != null) {
+                args.add("-loggingLevel");
+                args.add(loggingLevel_.name().toLowerCase());
+            }
 
-        // -pluginConfiguration
-        if (!pluginsConfiguration_.isEmpty()) {
-            args.add("-pluginsConfiguration");
-            var confs = new ArrayList<String>();
-            pluginsConfiguration_.forEach((k, v) ->
-                    confs.add(String.format("%s=%s", encodeJson(k), encodeJson(v))));
-            args.add(String.join("^^", confs));
-        }
+            // -moduleName
+            if (isNotBlank(moduleName_)) {
+                args.add("-moduleName");
+                args.add(moduleName_);
+            }
 
-        // -suppressInheritedMembers
-        if (suppressInheritedMembers_) {
-            args.add("-suppressInheritedMembers");
-        }
+            // -moduleVersion
+            if (isNotBlank(moduleVersion_)) {
+                args.add("-moduleVersion");
+                args.add(moduleVersion_);
+            }
 
-        // json
-        if (json_ != null) {
-            args.add(json_.getAbsolutePath());
-        }
+            // -noSuppressObviousFunctions
+            if (noSuppressObviousFunctions_) {
+                args.add("-noSuppressObviousFunctions");
+            }
 
-        if (LOGGER.isLoggable(Level.FINE)) {
-            LOGGER.fine(String.join(" ", args));
+            // -offlineMode
+            if (offlineMode_) {
+                args.add("-offlineMode");
+            }
+
+            // -pluginConfiguration
+            if (!pluginsConfiguration_.isEmpty()) {
+                args.add("-pluginsConfiguration");
+                var confs = new ArrayList<String>();
+                pluginsConfiguration_.forEach((k, v) ->
+                        confs.add(String.format("%s=%s", encodeJson(k), encodeJson(v))));
+                args.add(String.join("^^", confs));
+            }
+
+            // -suppressInheritedMembers
+            if (suppressInheritedMembers_) {
+                args.add("-suppressInheritedMembers");
+            }
+
+            // json
+            if (json_ != null) {
+                args.add(json_.getAbsolutePath());
+            }
+
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine(String.join(" ", args));
+            }
         }
 
         return args;

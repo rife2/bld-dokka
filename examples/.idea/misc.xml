@@ -6,6 +6,7 @@
     <pattern value="com.example.ExampleBuild" method="dokkaHtml" />
     <pattern value="com.example.ExampleBuild" method="dokkaGfm" />
     <pattern value="com.example.ExampleBuild" method="dokkaJekyll" />
+    <pattern value="com.example.ExampleBuild" method="docs" />
   </component>
   <component name="PDMPlugin">
     <option name="customRuleSets">

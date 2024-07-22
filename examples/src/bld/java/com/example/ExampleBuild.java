@@ -68,6 +68,14 @@ public class ExampleBuild extends Project {
                 .execute();
     }
 
+    @BuildCommand(value = "docs", summary = "Generates all documentation")
+    public void docs() throws ExitStatusException, IOException, InterruptedException {
+        dokkaGfm();
+        dokkaHtml();
+        dokkaJekyll();
+        javadoc();
+    }
+
     @BuildCommand(value = "dokka-gfm", summary = "Generates documentation in GitHub flavored markdown format")
     public void dokkaGfm() throws ExitStatusException, IOException, InterruptedException {
         new DokkaOperation()

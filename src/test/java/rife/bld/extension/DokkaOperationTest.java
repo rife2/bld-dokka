@@ -16,11 +16,13 @@
 
 package rife.bld.extension;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import rife.bld.blueprints.BaseProjectBlueprint;
 import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
 import rife.bld.extension.dokka.SourceSet;
+import rife.bld.operations.exceptions.ExitStatusException;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,11 +31,17 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 
 class DokkaOperationTest {
+    private static final File EXAMPLES = new File("examples");
     private static final String FILE_1 = "file1";
     private static final String FILE_2 = "file2";
     private static final String FILE_3 = "file3";
@@ -47,18 +55,28 @@ class DokkaOperationTest {
     private static final String PATH_3 = "path3";
     private static final String PATH_4 = "path4";
 
+    @BeforeAll
+    static void beforeAll() {
+        var level = Level.ALL;
+        var logger = Logger.getLogger("rife.bld.extension");
+        var consoleHandler = new ConsoleHandler();
+        consoleHandler.setLevel(level);
+        logger.addHandler(consoleHandler);
+        logger.setLevel(level);
+        logger.setUseParentHandlers(false);
+    }
+
     @Test
     void executeConstructProcessCommandListTest() throws IOException {
         var args = Files.readAllLines(Paths.get("src", "test", "resources", "dokka-args.txt"));
 
         assertThat(args).isNotEmpty();
 
-        var examples = new File("examples");
         var jsonConf = new File("config.json");
         var op = new DokkaOperation()
                 .delayTemplateSubstitution(true)
                 .failOnWarning(true)
-                .fromProject(new BaseProjectBlueprint(examples, "com.example", "Example"))
+                .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "Example"))
                 .globalLinks("s", "gLink1")
                 .globalLinks(Map.of("s2", "gLink2"))
                 .globalPackageOptions(OPTION_1, OPTION_2)
@@ -74,7 +92,7 @@ class DokkaOperationTest {
                 .moduleVersion("1.0")
                 .noSuppressObviousFunctions(true)
                 .offlineMode(true)
-                .outputDir(new File(examples, "build"))
+                .outputDir(new File(EXAMPLES, "build"))
                 .outputFormat(OutputFormat.JAVADOC)
                 .pluginConfigurations("name", "{\"json\"}")
                 .pluginConfigurations(Map.of("{\"name2\"}", "json2", "name3}", "{json3"))
@@ -107,10 +125,11 @@ class DokkaOperationTest {
             assertThat(found).as(p + " not found.").isTrue();
         }
 
-        var path = examples.getAbsolutePath();
+        var path = EXAMPLES.getAbsolutePath();
         var dokkaJar = "1.9.20.jar";
         var matches = List.of("java",
-                "-jar", path + "/lib/bld/dokka-cli-" + dokkaJar,
+                "-cp", path + "/lib/bld/dokka-cli-" + dokkaJar,
+                "org.jetbrains.dokka.MainKt",
                 "-pluginsClasspath", path + "/lib/bld/dokka-base-" + dokkaJar + ';' +
                         path + "/lib/bld/analysis-kotlin-descriptors-" + dokkaJar + ';' +
                         path + "/lib/bld/javadoc-plugin-" + dokkaJar + ';' +
@@ -145,5 +164,21 @@ class DokkaOperationTest {
                 assertThat(params.get(i)).as(params.get(i)).isEqualTo(matches.get(i));
             }
         });
+    }
+
+    @Test
+    void executeNoProjectTest() {
+        var op = new DokkaOperation();
+        assertThatThrownBy(op::execute).isInstanceOf(ExitStatusException.class);
+    }
+
+    @Test
+    void executeTest() {
+        var op = new DokkaOperation()
+                .fromProject(
+                        new BaseProjectBlueprint(EXAMPLES, "com.example", "examples"))
+                .outputDir("build/javadoc")
+                .outputFormat(OutputFormat.JAVADOC);
+        assertThatCode(op::execute).doesNotThrowAnyException();
     }
 }
