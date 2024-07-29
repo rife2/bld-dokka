@@ -39,7 +39,7 @@ public class DokkaOperationBuild extends Project {
 
         downloadSources = true;
         autoDownloadPurge = true;
-        repositories = List.of(MAVEN_LOCAL, MAVEN_CENTRAL, RIFE2_RELEASES);
+        repositories = List.of(MAVEN_LOCAL, MAVEN_CENTRAL, RIFE2_RELEASES, RIFE2_SNAPSHOTS);
 
         var dokka = version(1, 9, 20);
         scope(compile)
@@ -49,7 +49,7 @@ public class DokkaOperationBuild extends Project {
                 .include(dependency("org.jetbrains.dokka", "javadoc-plugin", dokka))
                 .include(dependency("org.jetbrains.dokka", "gfm-plugin", dokka))
                 .include(dependency("org.jetbrains.dokka", "jekyll-plugin", dokka))
-                .include(dependency("com.uwyn.rife2", "bld", version(1, 9, 1)));
+                .include(dependency("com.uwyn.rife2", "bld", version(2, 0, 1)));
         scope(test)
                 .include(dependency("org.junit.jupiter", "junit-jupiter", version(5, 10, 3)))
                 .include(dependency("org.junit.platform", "junit-platform-console-standalone", version(1, 10, 3)))
