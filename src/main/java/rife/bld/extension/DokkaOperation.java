@@ -26,7 +26,11 @@ import rife.tools.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -446,8 +450,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      */
     public DokkaOperation includes(File... files) {
-        includes_.addAll(List.of(files));
-        return this;
+        return includes(List.of(files));
     }
 
     /**
@@ -461,9 +464,23 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      */
     public DokkaOperation includes(String... files) {
-        includes_.addAll(Arrays.stream(files).map(File::new).toList());
-        return this;
+        return includesStrings(List.of(files));
     }
+
+    /**
+     * Sets the Markdown files that contain module and package documentation.
+     * <p>
+     * The contents of specified files are parsed and embedded into documentation as module and package descriptions.
+     * <p>
+     * This can be configured on per-package basis.
+     *
+     * @param files one or more files
+     * @return this operation instance
+     */
+    public DokkaOperation includes(Path... files) {
+        return includesPaths(List.of(files));
+    }
+
 
     /**
      * Retrieves the markdown files that contain the module and package documentation.
@@ -490,6 +507,36 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
+     * Sets the Markdown files that contain module and package documentation.
+     * <p>
+     * The contents of specified files are parsed and embedded into documentation as module and package descriptions.
+     * <p>
+     * This can be configured on per-package basis.
+     *
+     * @param files the markdown files
+     * @return this operation instance
+     */
+    public DokkaOperation includesPaths(Collection<Path> files) {
+        includes_.addAll(files.stream().map(Path::toFile).toList());
+        return this;
+    }
+
+    /**
+     * Sets the Markdown files that contain module and package documentation.
+     * <p>
+     * The contents of specified files are parsed and embedded into documentation as module and package descriptions.
+     * <p>
+     * This can be configured on per-package basis.
+     *
+     * @param files the markdown files
+     * @return this operation instance
+     */
+    public DokkaOperation includesStrings(Collection<String> files) {
+        includes_.addAll(files.stream().map(File::new).toList());
+        return this;
+    }
+
+    /**
      * JSON configuration file path.
      *
      * @param configuration the configuration file path
@@ -497,6 +544,33 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     public DokkaOperation json(File configuration) {
         json_ = configuration;
         return this;
+    }
+
+    /**
+     * JSON configuration file path.
+     *
+     * @param configuration the configuration file path
+     */
+    public DokkaOperation json(Path configuration) {
+        return json(configuration.toFile());
+    }
+
+    /**
+     * Retrieves the JSON configuration file path.
+     *
+     * @return the configuration file path
+     */
+    public File json() {
+        return json_;
+    }
+
+    /**
+     * JSON configuration file path.
+     *
+     * @param configuration the configuration file path
+     */
+    public DokkaOperation json(String configuration) {
+        return json(new File(configuration));
     }
 
     /**
@@ -590,6 +664,15 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
+     * Retrieves the output directory path.
+     *
+     * @return the output directory
+     */
+    public File outputDir() {
+        return outputDir_;
+    }
+
+    /**
      * Sets the output directory path, {@code ./dokka} by default.
      * <p>
      * The directory to where documentation is generated, regardless of output format.
@@ -598,8 +681,19 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      */
     public DokkaOperation outputDir(String outputDir) {
-        outputDir_ = new File(outputDir);
-        return this;
+        return outputDir(new File(outputDir));
+    }
+
+    /**
+     * Sets the output directory path, {@code ./dokka} by default.
+     * <p>
+     * The directory to where documentation is generated, regardless of output format.
+     *
+     * @param outputDir the output directory
+     * @return this operation instance
+     */
+    public DokkaOperation outputDir(Path outputDir) {
+        return outputDir(outputDir.toFile());
     }
 
     /**
@@ -641,12 +735,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     /**
      * Sets the configuration for Dokka plugins.
      *
-     * @param pluginConfiguratione the map of configurations
+     * @param pluginConfigurations the map of configurations
      * @return this operation instance
      * @see #pluginConfigurations(String, String)
      */
-    public DokkaOperation pluginConfigurations(Map<String, String> pluginConfiguratione) {
-        pluginsConfiguration_.putAll(pluginConfiguratione);
+    public DokkaOperation pluginConfigurations(Map<String, String> pluginConfigurations) {
+        pluginsConfiguration_.putAll(pluginConfigurations);
         return this;
     }
 
@@ -666,8 +760,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      */
     public DokkaOperation pluginsClasspath(File... jars) {
-        pluginsClasspath_.addAll(List.of(jars));
-        return this;
+        return pluginsClasspath(List.of(jars));
     }
 
     /**
@@ -677,8 +770,17 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      */
     public DokkaOperation pluginsClasspath(String... jars) {
-        pluginsClasspath_.addAll(Arrays.stream(jars).map(File::new).toList());
-        return this;
+        return pluginsClasspathStrings(List.of(jars));
+    }
+
+    /**
+     * Sets the jars for Dokka plugins and their dependencies.
+     *
+     * @param jars one or more jars
+     * @return this operation instance
+     */
+    public DokkaOperation pluginsClasspath(Path... jars) {
+        return pluginsClasspathPaths(List.of(jars));
     }
 
     /**
@@ -698,6 +800,28 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      */
     public DokkaOperation pluginsClasspath(Collection<File> jars) {
         pluginsClasspath_.addAll(jars);
+        return this;
+    }
+
+    /**
+     * Sets the jars for Dokka plugins and their dependencies.
+     *
+     * @param jars the jars
+     * @return this operation instance
+     */
+    public DokkaOperation pluginsClasspathPaths(Collection<Path> jars) {
+        pluginsClasspath_.addAll(jars.stream().map(Path::toFile).toList());
+        return this;
+    }
+
+    /**
+     * Sets the jars for Dokka plugins and their dependencies.
+     *
+     * @param jars the jars
+     * @return this operation instance
+     */
+    public DokkaOperation pluginsClasspathStrings(Collection<String> jars) {
+        pluginsClasspath_.addAll(jars.stream().map(File::new).toList());
         return this;
     }
 

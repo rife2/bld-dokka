@@ -27,6 +27,7 @@ import rife.bld.operations.exceptions.ExitStatusException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
@@ -180,5 +181,95 @@ class DokkaOperationTest {
                 .outputDir("build/javadoc")
                 .outputFormat(OutputFormat.JAVADOC);
         assertThatCode(op::execute).doesNotThrowAnyException();
+    }
+
+    @Test
+    void includesTest() {
+        var op = new DokkaOperation();
+
+        op.includes(List.of(new File(FILE_1), new File(FILE_2)));
+        assertThat(op.includes()).as("List(File...)").containsExactly(new File(FILE_1), new File(FILE_2));
+        op.includes().clear();
+
+        op.includes(new File(FILE_1), new File(FILE_2));
+        assertThat(op.includes()).as("File...").containsExactly(new File(FILE_1), new File(FILE_2));
+        op.includes().clear();
+
+        op.includes(FILE_1, FILE_2);
+        assertThat(op.includes()).as("String...")
+                .containsExactly(new File(FILE_1), new File(FILE_2));
+        op.includes().clear();
+
+        op = op.includes(Path.of(FILE_1), Path.of(FILE_2));
+        assertThat(op.includes()).as("Path...")
+                .containsExactly(new File(FILE_1), new File(FILE_2));
+        op.includes().clear();
+
+        op.includesPaths(List.of(new File(FILE_1).toPath(), new File(FILE_2).toPath()));
+        assertThat(op.includes()).as("List(Path...)").containsExactly(new File(FILE_1), new File(FILE_2));
+        op.includes().clear();
+
+        op.includesStrings(List.of(FILE_1, FILE_2));
+        assertThat(op.includes()).as("List(String...)").containsExactly(new File(FILE_1), new File(FILE_2));
+        op.includes().clear();
+    }
+
+    @Test
+    void jsonTest() {
+        var file1 = new File(FILE_1);
+        var op = new DokkaOperation().json(file1);
+        assertThat(op.json()).isEqualTo(file1);
+
+        var file2 = Path.of(FILE_2);
+        op = op.json(file2);
+        assertThat(op.json()).isEqualTo(file2.toFile());
+
+        op = op.json(FILE_3);
+        assertThat(op.json()).isEqualTo(new File(FILE_3));
+    }
+
+    @Test
+    void outputDirTest() {
+        var javadoc = "build/javadoc";
+        var op = new DokkaOperation().outputDir(javadoc);
+        assertThat(op.outputDir()).isEqualTo(new File(javadoc));
+
+        var build = "build";
+        op = op.outputDir(Path.of(build));
+        assertThat(op.outputDir()).isEqualTo(new File(build));
+
+        op = op.outputDir(new File(javadoc));
+        assertThat(op.outputDir()).isEqualTo(new File(javadoc));
+    }
+
+    @Test
+    void pluginClasspathTest() {
+        var op = new DokkaOperation();
+    
+        op.pluginsClasspath(List.of(new File(FILE_1), new File(FILE_2)));
+        assertThat(op.pluginsClasspath()).as("List(File...)").containsExactly(new File(FILE_1), new File(FILE_2));
+        op.pluginsClasspath().clear();
+
+        op.pluginsClasspath(new File(FILE_1), new File(FILE_2));
+        assertThat(op.pluginsClasspath()).as("File...").containsExactly(new File(FILE_1), new File(FILE_2));
+        op.pluginsClasspath().clear();
+
+        op.pluginsClasspath(FILE_1, FILE_2);
+        assertThat(op.pluginsClasspath()).as("String...")
+                .containsExactly(new File(FILE_1), new File(FILE_2));
+        op.pluginsClasspath().clear();
+
+        op = op.pluginsClasspath(Path.of(FILE_1), Path.of(FILE_2));
+        assertThat(op.pluginsClasspath()).as("Path...")
+                .containsExactly(new File(FILE_1), new File(FILE_2));
+        op.pluginsClasspath().clear();
+
+        op.pluginsClasspathPaths(List.of(new File(FILE_1).toPath(), new File(FILE_2).toPath()));
+        assertThat(op.pluginsClasspath()).as("List(Path...)").containsExactly(new File(FILE_1), new File(FILE_2));
+        op.pluginsClasspath().clear();
+
+        op.pluginsClasspathStrings(List.of(FILE_1, FILE_2));
+        assertThat(op.pluginsClasspath()).as("List(String...)").containsExactly(new File(FILE_1), new File(FILE_2));
+        op.pluginsClasspath().clear();
     }
 }

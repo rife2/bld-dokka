@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static rife.bld.extension.TestUtils.localPath;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class SourceSetTest {
     private static final String CLASSPATH_1 = "classpath1";
     private static final String CLASSPATH_2 = "classpath2";
@@ -50,6 +52,104 @@ class SourceSetTest {
     private static final String SUP_1 = "sup1";
     private static final String SUP_2 = "sup2";
     private static final String SUP_3 = "sup3";
+
+    @Test
+    void classpathTest() {
+        var args = new SourceSet();
+
+        args.classpath(new File(CLASSPATH_1), new File(CLASSPATH_2));
+        assertThat(args.classpath()).as("File...").containsExactly(new File(CLASSPATH_1), new File(CLASSPATH_2));
+        args.classpath().clear();
+
+        args = args.classpath(Path.of(CLASSPATH_1), Path.of(CLASSPATH_2));
+        assertThat(args.classpath()).as("Path...")
+                .containsExactly(new File(CLASSPATH_1), new File(CLASSPATH_2));
+        args.classpath().clear();
+
+        args.classpath(CLASSPATH_1, CLASSPATH_2);
+        assertThat(args.classpath()).as("String...")
+                .containsExactly(new File(CLASSPATH_1), new File(CLASSPATH_2));
+        args.classpath().clear();
+
+        args.classpath(List.of(new File(CLASSPATH_1), new File(CLASSPATH_2)));
+        assertThat(args.classpath()).as("File(List...)").containsExactly(new File(CLASSPATH_1), new File(CLASSPATH_2));
+        args.classpath().clear();
+
+        args.classpathPaths(List.of(new File(CLASSPATH_1).toPath(), new File(CLASSPATH_2).toPath()));
+        assertThat(args.classpath()).as("List(Path...)").containsExactly(new File(CLASSPATH_1), new File(CLASSPATH_2));
+        args.classpath().clear();
+
+        args.classpathStrings(List.of(CLASSPATH_1, CLASSPATH_2));
+        assertThat(args.classpath()).as("List(String...)").containsExactly(new File(CLASSPATH_1), new File(CLASSPATH_2));
+        args.classpath().clear();
+    }
+
+    @Test
+    void includesTest() {
+        var args = new SourceSet();
+
+        args.includes(new File(INCLUDES_1), new File(INCLUDES_2));
+        assertThat(args.includes()).as("File...").containsExactly(new File(INCLUDES_1), new File(INCLUDES_2));
+        args.includes().clear();
+
+        args = args.includes(Path.of(INCLUDES_1), Path.of(INCLUDES_2));
+        assertThat(args.includes()).as("Path...").containsExactly(new File(INCLUDES_1), new File(INCLUDES_2));
+        args.includes().clear();
+
+        args.includes(INCLUDES_1, INCLUDES_2);
+        assertThat(args.includes()).as("String...").containsExactly(new File(INCLUDES_1), new File(INCLUDES_2));
+        args.includes().clear();
+
+        args.includes(List.of(new File(INCLUDES_1), new File(INCLUDES_2)));
+        assertThat(args.includes()).as("List(File...)").containsExactly(new File(INCLUDES_1), new File(INCLUDES_2));
+        args.includes().clear();
+
+        args.includesPaths(List.of(new File(INCLUDES_1).toPath(), new File(INCLUDES_2).toPath()));
+        assertThat(args.includes()).as("List(Path...)").containsExactly(new File(INCLUDES_1), new File(INCLUDES_2));
+        args.includes().clear();
+
+        args.includesStrings(List.of(INCLUDES_1, INCLUDES_2));
+        assertThat(args.includes()).as("List(String...)").containsExactly(new File(INCLUDES_1), new File(INCLUDES_2));
+        args.includes().clear();
+    }
+
+    @Test
+    void jdkVersionTest() {
+        var args = new SourceSet().jdkVersion("22");
+        assertThat(args.jdkVersion()).isEqualTo("22");
+        args = args.jdkVersion(19);
+        assertThat(args.jdkVersion()).isEqualTo("19");
+    }
+
+    @Test
+    void samplesTest() {
+        var args = new SourceSet();
+        args.samples(new File(SAMPLES_1), new File(SAMPLES_2));
+        assertThat(args.samples()).as("File...").containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
+        args.samples().clear();
+
+        args = args.samples(Path.of(SAMPLES_1), Path.of(SAMPLES_2));
+        assertThat(args.samples()).as("Path...")
+                .containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
+        args.samples().clear();
+
+        args.samples(SAMPLES_1, SAMPLES_2);
+        assertThat(args.samples()).as("String...")
+                .containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
+        args.samples().clear();
+
+        args.samples(List.of(new File(SAMPLES_1), new File(SAMPLES_2)));
+        assertThat(args.samples()).as("List(File...)").containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
+        args.samples().clear();
+
+        args.samplesPaths(List.of(new File(SAMPLES_1).toPath(), new File(SAMPLES_2).toPath()));
+        assertThat(args.samples()).as("List(Path...)").containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
+        args.samples().clear();
+
+        args.samplesStrings(List.of(SAMPLES_1, SAMPLES_2));
+        assertThat(args.samples()).as("List(String...)").containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
+        args.samples().clear();
+    }
 
     @Test
     void sourceSetCollectionsTest() {
@@ -178,5 +278,68 @@ class SourceSetTest {
         sourceSet.classpath(List.of(new File(CLASSPATH_1), new File(CLASSPATH_2)));
 
         IntStream.range(0, params.size()).forEach(i -> assertThat(params.get(i)).isEqualTo(matches.get(i)));
+    }
+
+    @Test
+    void srcTest() {
+        var src = "src";
+        var main = "src/main";
+        var test = "src/test";
+        var srcFile = new File(src);
+        var mainFile = new File(main);
+        var testFile = new File(test);
+
+        var args = new SourceSet().src(src, main);
+        assertThat(args.src()).as("String...").containsExactly(srcFile, mainFile);
+        args.src().clear();
+
+        args = new SourceSet().srcStrings(List.of(src, main));
+        assertThat(args.src()).as("List(String...)").containsExactly(srcFile, mainFile);
+        args.src().clear();
+
+        args = args.src(srcFile.toPath(), mainFile.toPath());
+        assertThat(args.src()).as("Path...").containsExactly(srcFile, mainFile);
+        args.src().clear();
+
+        args = args.srcPaths(List.of(srcFile.toPath(), testFile.toPath()));
+        assertThat(args.src()).as("List(Path...)").containsExactly(srcFile, testFile);
+        args.src().clear();
+
+        args = args.src(srcFile, mainFile);
+        assertThat(args.src()).as("File...").containsExactly(srcFile, mainFile);
+        args.src().clear();
+
+        args = args.src(List.of(srcFile, mainFile));
+        assertThat(args.src()).as("List(File...)").containsExactly(srcFile, mainFile);
+        args.src().clear();
+    }
+
+    @Test
+    void suppressedFilesTest() {
+        var args = new SourceSet();
+
+        args.suppressedFiles(new File(SAMPLES_1), new File(SAMPLES_2));
+        assertThat(args.suppressedFiles()).as("File...").containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
+        args.suppressedFiles().clear();
+
+        args = args.suppressedFiles(Path.of(SAMPLES_1), Path.of(SAMPLES_2));
+        assertThat(args.suppressedFiles()).as("Path...").containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
+        args.suppressedFiles().clear();
+
+        args.suppressedFiles(SAMPLES_1, SAMPLES_2);
+        assertThat(args.suppressedFiles()).as("String...").containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
+        args.suppressedFiles().clear();
+
+        args.suppressedFiles(List.of(new File(SAMPLES_1), new File(SAMPLES_2)));
+        assertThat(args.suppressedFiles()).as("List(File...)").containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
+        args.suppressedFiles().clear();
+
+        args.suppressedFilesPaths(List.of(new File(SAMPLES_1).toPath(), new File(SAMPLES_2).toPath()));
+        assertThat(args.suppressedFiles()).as("List(Path...)").containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
+        args.suppressedFiles().clear();
+
+        args.suppressedFilesStrings(List.of(SAMPLES_1, SAMPLES_2));
+        assertThat(args.suppressedFiles()).as("List(String...)").containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
+        args.suppressedFiles().clear();
     }
 }

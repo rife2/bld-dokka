@@ -19,7 +19,11 @@ package rife.bld.extension.dokka;
 import rife.bld.extension.DokkaOperation;
 
 import java.io.File;
-import java.util.*;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -238,8 +242,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet classpath(File... files) {
-        classpath_.addAll(List.of(files));
-        return this;
+        return classpath(List.of(files));
     }
 
     /**
@@ -253,8 +256,21 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet classpath(String... files) {
-        classpath_.addAll(Arrays.stream(files).map(File::new).toList());
-        return this;
+        return classpathStrings(List.of(files));
+    }
+
+    /**
+     * Sets classpath for analysis and interactive samples.
+     * <p>
+     * This is useful if some types that come from dependencies are not resolved/picked up automatically.
+     * <p>
+     * This option accepts both {@code .jar} and {@code .klib} files.
+     *
+     * @param files one or more file
+     * @return this operation instance
+     */
+    public SourceSet classpath(Path... files) {
+        return classpathPaths(List.of(files));
     }
 
     /**
@@ -279,6 +295,36 @@ public class SourceSet {
      */
     public Collection<File> classpath() {
         return classpath_;
+    }
+
+    /**
+     * Sets classpath for analysis and interactive samples.
+     * <p>
+     * This is useful if some types that come from dependencies are not resolved/picked up automatically.
+     * <p>
+     * This option accepts both {@code .jar} and {@code .klib} files.
+     *
+     * @param files the collection of files
+     * @return this operation instance
+     */
+    public SourceSet classpathPaths(Collection<Path> files) {
+        classpath_.addAll(files.stream().map(Path::toFile).toList());
+        return this;
+    }
+
+    /**
+     * Sets classpath for analysis and interactive samples.
+     * <p>
+     * This is useful if some types that come from dependencies are not resolved/picked up automatically.
+     * <p>
+     * This option accepts both {@code .jar} and {@code .klib} files.
+     *
+     * @param files the collection of files
+     * @return this operation instance
+     */
+    public SourceSet classpathStrings(Collection<String> files) {
+        classpath_.addAll(files.stream().map(File::new).toList());
+        return this;
     }
 
     /**
@@ -420,9 +466,24 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet includes(String... files) {
-        includes_.addAll(Arrays.stream(files).map(File::new).toList());
-        return this;
+        return includesStrings(List.of(files));
     }
+
+    /**
+     * Sets the Markdown files that contain module and package documentation.
+     * <p>
+     * The Markdown files that contain module and package documentation.
+     * <p>
+     * The contents of the specified files are parsed and embedded into documentation as module and package
+     * descriptions.
+     *
+     * @param files one or more files
+     * @return this operation instance
+     */
+    public SourceSet includes(Path... files) {
+        return includesPaths(List.of(files));
+    }
+
 
     /**
      * Retrieves the Markdown files that contain module and package documentation.
@@ -450,6 +511,38 @@ public class SourceSet {
     }
 
     /**
+     * Sets the Markdown files that contain module and package documentation.
+     * <p>
+     * The Markdown files that contain module and package documentation.
+     * <p>
+     * The contents of the specified files are parsed and embedded into documentation as module and package
+     * descriptions.
+     *
+     * @param files the collection of files
+     * @return this operation instance
+     */
+    public SourceSet includesPaths(Collection<Path> files) {
+        includes_.addAll(files.stream().map(Path::toFile).toList());
+        return this;
+    }
+
+    /**
+     * Sets the Markdown files that contain module and package documentation.
+     * <p>
+     * The Markdown files that contain module and package documentation.
+     * <p>
+     * The contents of the specified files are parsed and embedded into documentation as module and package
+     * descriptions.
+     *
+     * @param files the collection of files
+     * @return this operation instance
+     */
+    public SourceSet includesStrings(Collection<String> files) {
+        includes_.addAll(files.stream().map(File::new).toList());
+        return this;
+    }
+
+    /**
      * Sets the version of JDK to use for linking to JDK Javadocs.
      * <p>
      * The JDK version to use when generating external documentation links for Java types.
@@ -463,6 +556,15 @@ public class SourceSet {
     public SourceSet jdkVersion(String jdkVersion) {
         jdkVersion_ = jdkVersion;
         return this;
+    }
+
+    /**
+     * Retrieves the version of the JDK to use for linking to JDK Javadocs.
+     *
+     * @return the JDK version.
+     */
+    public String jdkVersion() {
+        return jdkVersion_;
     }
 
     /**
@@ -657,8 +759,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet samples(File... samples) {
-        samples_.addAll(List.of(samples));
-        return this;
+        return samples(List.of(samples));
     }
 
     /**
@@ -671,7 +772,47 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet samples(String... samples) {
-        samples_.addAll(Arrays.stream(samples).map(File::new).toList());
+        return samplesStrings(List.of(samples));
+    }
+
+    /**
+     * Set the directories or files that contain sample functions.
+     * <p>
+     * The directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
+     * tag.
+     *
+     * @param samples nne or more samples
+     * @return this operation instance
+     */
+    public SourceSet samples(Path... samples) {
+        return samplesPaths(List.of(samples));
+    }
+
+    /**
+     * Set the directories or files that contain sample functions.
+     * <p>
+     * The directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
+     * tag.
+     *
+     * @param samples the samples
+     * @return this operation instance
+     */
+    public SourceSet samplesPaths(Collection<Path> samples) {
+        samples_.addAll(samples.stream().map(Path::toFile).toList());
+        return this;
+    }
+
+    /**
+     * Set the directories or files that contain sample functions.
+     * <p>
+     * The directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
+     * tag.
+     *
+     * @param samples the samples
+     * @return this operation instance
+     */
+    public SourceSet samplesStrings(Collection<String> samples) {
+        samples_.addAll(samples.stream().map(File::new).toList());
         return this;
     }
 
@@ -725,8 +866,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet src(File... src) {
-        src_.addAll(List.of(src));
-        return this;
+        return src(List.of(src));
     }
 
     /**
@@ -739,8 +879,20 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet src(String... src) {
-        src_.addAll(Arrays.stream(src).map(File::new).toList());
-        return this;
+        return srcStrings(List.of(src));
+    }
+
+    /**
+     * Sets the source code roots to be analyzed and documented.
+     * <p>
+     * The source code roots to be analyzed and documented. Acceptable inputs are directories and individual
+     * {@code .kt} / {@code .java} files.
+     *
+     * @param src pne ore moe source code roots
+     * @return this operation instance
+     */
+    public SourceSet src(Path... src) {
+        return srcPaths(List.of(src));
     }
 
     /**
@@ -788,6 +940,34 @@ public class SourceSet {
     }
 
     /**
+     * Sets the source code roots to be analyzed and documented.
+     * <p>
+     * The source code roots to be analyzed and documented. Acceptable inputs are directories and individual
+     * {@code .kt} / {@code .java} files.
+     *
+     * @param src the source code roots
+     * @return this operation instance
+     */
+    public SourceSet srcPaths(Collection<Path> src) {
+        src_.addAll(src.stream().map(Path::toFile).toList());
+        return this;
+    }
+
+    /**
+     * Sets the source code roots to be analyzed and documented.
+     * <p>
+     * The source code roots to be analyzed and documented. Acceptable inputs are directories and individual
+     * {@code .kt} / {@code .java} files.
+     *
+     * @param src the source code roots
+     * @return this operation instance
+     */
+    public SourceSet srcStrings(Collection<String> src) {
+        src_.addAll(src.stream().map(File::new).toList());
+        return this;
+    }
+
+    /**
      * Sets the paths to files to be suppressed.
      * <p>
      * The files to be suppressed when generating documentation.
@@ -799,7 +979,6 @@ public class SourceSet {
         suppressedFiles_.addAll(suppressedFiles);
         return this;
     }
-
 
     /**
      * Retrieves the paths to files to be suppressed.
@@ -819,8 +998,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet suppressedFiles(String... suppressedFiles) {
-        suppressedFiles_.addAll(Arrays.stream(suppressedFiles).map(File::new).toList());
-        return this;
+        return suppressedFilesStrings(List.of(suppressedFiles));
     }
 
     /**
@@ -832,7 +1010,44 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet suppressedFiles(File... suppressedFiles) {
-        suppressedFiles_.addAll(List.of(suppressedFiles));
+        return suppressedFiles(List.of(suppressedFiles));
+    }
+
+    /**
+     * Sets the paths to files to be suppressed.
+     * <p>
+     * The files to be suppressed when generating documentation.
+     *
+     * @param suppressedFiles one or moe suppressed files
+     * @return this operation instance
+     */
+    public SourceSet suppressedFiles(Path... suppressedFiles) {
+        return suppressedFilesPaths(List.of(suppressedFiles));
+    }
+
+    /**
+     * Sets the paths to files to be suppressed.
+     * <p>
+     * The files to be suppressed when generating documentation.
+     *
+     * @param suppressedFiles the suppressed files
+     * @return this operation instance
+     */
+    public SourceSet suppressedFilesPaths(Collection<Path> suppressedFiles) {
+        suppressedFiles_.addAll(suppressedFiles.stream().map(Path::toFile).toList());
+        return this;
+    }
+
+    /**
+     * Sets the paths to files to be suppressed.
+     * <p>
+     * The files to be suppressed when generating documentation.
+     *
+     * @param suppressedFiles the suppressed files
+     * @return this operation instance
+     */
+    public SourceSet suppressedFilesStrings(Collection<String> suppressedFiles) {
+        suppressedFiles_.addAll(suppressedFiles.stream().map(File::new).toList());
         return this;
     }
 }
