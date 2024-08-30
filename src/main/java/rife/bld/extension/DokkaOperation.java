@@ -373,8 +373,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      */
     public DokkaOperation globalPackageOptions(String... options) {
-        globalPackageOptions_.addAll(List.of(options));
-        return this;
+        return globalPackageOptions(List.of(options));
     }
 
     /**
@@ -415,8 +414,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      */
     public DokkaOperation globalSrcLink(String... links) {
-        globalSrcLinks_.addAll(List.of(links));
-        return this;
+        return globalSrcLink(List.of(links));
     }
 
     /**
@@ -448,6 +446,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param files one or more files
      * @return this operation instance
+     * @see #includes(Collection)
      */
     public DokkaOperation includes(File... files) {
         return includes(List.of(files));
@@ -462,6 +461,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param files one or more files
      * @return this operation instance
+     * @see #includesStrings(Collection)
      */
     public DokkaOperation includes(String... files) {
         return includesStrings(List.of(files));
@@ -476,6 +476,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param files one or more files
      * @return this operation instance
+     * @see #includesPaths(Collection)
      */
     public DokkaOperation includes(Path... files) {
         return includesPaths(List.of(files));
@@ -500,6 +501,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param files the markdown files
      * @return this operation instance
+     * @see #includes(File...)
      */
     public DokkaOperation includes(Collection<File> files) {
         includes_.addAll(files);
@@ -515,10 +517,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param files the markdown files
      * @return this operation instance
+     * @see #includes(Path...)
      */
     public DokkaOperation includesPaths(Collection<Path> files) {
-        includes_.addAll(files.stream().map(Path::toFile).toList());
-        return this;
+        return includes(files.stream().map(Path::toFile).toList());
     }
 
     /**
@@ -530,10 +532,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param files the markdown files
      * @return this operation instance
+     * @see #includes(String...)
      */
     public DokkaOperation includesStrings(Collection<String> files) {
-        includes_.addAll(files.stream().map(File::new).toList());
-        return this;
+        return includes(files.stream().map(File::new).toList());
     }
 
     /**
@@ -758,6 +760,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param jars one or more jars
      * @return this operation instance
+     * @see #includes(Collection)
      */
     public DokkaOperation pluginsClasspath(File... jars) {
         return pluginsClasspath(List.of(jars));
@@ -768,6 +771,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param jars one or more jars
      * @return this operation instance
+     * @see #pluginsClasspathStrings(Collection)
      */
     public DokkaOperation pluginsClasspath(String... jars) {
         return pluginsClasspathStrings(List.of(jars));
@@ -778,6 +782,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param jars one or more jars
      * @return this operation instance
+     * @see #pluginsClasspathPaths(Collection)
      */
     public DokkaOperation pluginsClasspath(Path... jars) {
         return pluginsClasspathPaths(List.of(jars));
@@ -797,6 +802,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param jars the jars
      * @return this operation instance
+     * @see #pluginsClasspath(Collection)
      */
     public DokkaOperation pluginsClasspath(Collection<File> jars) {
         pluginsClasspath_.addAll(jars);
@@ -808,10 +814,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param jars the jars
      * @return this operation instance
+     * @see #pluginsClasspath(Path...)
      */
     public DokkaOperation pluginsClasspathPaths(Collection<Path> jars) {
-        pluginsClasspath_.addAll(jars.stream().map(Path::toFile).toList());
-        return this;
+        return pluginsClasspath(jars.stream().map(Path::toFile).toList());
     }
 
     /**
@@ -819,10 +825,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param jars the jars
      * @return this operation instance
+     * @see #pluginsClasspath(String...)
      */
     public DokkaOperation pluginsClasspathStrings(Collection<String> jars) {
-        pluginsClasspath_.addAll(jars.stream().map(File::new).toList());
-        return this;
+        return pluginsClasspath(jars.stream().map(File::new).toList());
     }
 
     /**

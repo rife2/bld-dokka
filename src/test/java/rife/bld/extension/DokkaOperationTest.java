@@ -245,7 +245,7 @@ class DokkaOperationTest {
     @Test
     void pluginClasspathTest() {
         var op = new DokkaOperation();
-    
+
         op.pluginsClasspath(List.of(new File(FILE_1), new File(FILE_2)));
         assertThat(op.pluginsClasspath()).as("List(File...)").containsExactly(new File(FILE_1), new File(FILE_2));
         op.pluginsClasspath().clear();
