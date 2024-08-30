@@ -42,6 +42,7 @@ class SourceSetTest {
     private static final String OPTION_2 = "option2";
     private static final String PATH_1 = "path1";
     private static final String PATH_2 = "path2";
+    private static final String PATH_3 = "path3";
     private static final String SAMPLES_1 = "samples1";
     private static final String SAMPLES_2 = "samples2";
     private static final String SAMPLES_3 = "samples3";
@@ -221,6 +222,7 @@ class SourceSetTest {
                 .src(List.of(new File(SRC_4)))
                 .srcLink(PATH_1, "remote1", "#suffix1")
                 .srcLink(new File(PATH_2), "remote2", "#suffix2")
+                .srcLink(Path.of(PATH_3), "remote3", "#suffix3")
                 .suppressedFiles(SUP_1, SUP_2);
 
         assertThat(sourceSet.classpath()).as("classpath").hasSize(2);
@@ -231,7 +233,7 @@ class SourceSetTest {
         assertThat(sourceSet.perPackageOptions()).as("perPackageOptions").hasSize(2);
         assertThat(sourceSet.samples()).as("samples").hasSize(2);
         assertThat(sourceSet.src()).as("src").hasSize(4);
-        assertThat(sourceSet.srcLinks()).as("srcLinks").hasSize(2);
+        assertThat(sourceSet.srcLinks()).as("srcLinks").hasSize(3);
         assertThat(sourceSet.suppressedFiles()).as("suppressedFiles").hasSize(2);
 
         var params = sourceSet.args();
@@ -266,7 +268,8 @@ class SourceSetTest {
                 "-samples", localPath(SAMPLES_1, SAMPLES_2),
                 "-skipDeprecated",
                 "-src", localPath(SRC_1, SRC_2, SRC_3, SRC_4),
-                "-srcLink", localPath(PATH_2) + "=remote2#suffix2;path1=remote1#suffix1",
+                "-srcLink", localPath(PATH_2) + "=remote2#suffix2;" + localPath(PATH_3) + "=remote3#suffix3;" +
+                        "path1=remote1#suffix1",
                 "-sourceSetName", "setName",
 
                 "-suppressedFiles", localPath(SUP_1, SUP_2));

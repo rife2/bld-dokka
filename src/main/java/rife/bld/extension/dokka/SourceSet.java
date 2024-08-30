@@ -87,8 +87,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet apiVersion(int apiVersion) {
-        apiVersion_ = String.valueOf(apiVersion);
-        return this;
+        return apiVersion(String.valueOf(apiVersion));
     }
 
     /**
@@ -240,6 +239,7 @@ public class SourceSet {
      *
      * @param files one or more file
      * @return this operation instance
+     * @see #classpath(Collection)
      */
     public SourceSet classpath(File... files) {
         return classpath(List.of(files));
@@ -254,6 +254,7 @@ public class SourceSet {
      *
      * @param files one or more file
      * @return this operation instance
+     * @see #classpathStrings(Collection)
      */
     public SourceSet classpath(String... files) {
         return classpathStrings(List.of(files));
@@ -268,6 +269,7 @@ public class SourceSet {
      *
      * @param files one or more file
      * @return this operation instance
+     * @see #classpathPaths(Collection)
      */
     public SourceSet classpath(Path... files) {
         return classpathPaths(List.of(files));
@@ -282,6 +284,7 @@ public class SourceSet {
      *
      * @param files the collection of files
      * @return this operation instance
+     * @see #classpath(File...)
      */
     public SourceSet classpath(Collection<File> files) {
         classpath_.addAll(files);
@@ -306,10 +309,10 @@ public class SourceSet {
      *
      * @param files the collection of files
      * @return this operation instance
+     * @see #classpath(Path...)
      */
     public SourceSet classpathPaths(Collection<Path> files) {
-        classpath_.addAll(files.stream().map(Path::toFile).toList());
-        return this;
+        return classpath(files.stream().map(Path::toFile).toList());
     }
 
     /**
@@ -321,10 +324,10 @@ public class SourceSet {
      *
      * @param files the collection of files
      * @return this operation instance
+     * @see #classpath(String...)
      */
     public SourceSet classpathStrings(Collection<String> files) {
-        classpath_.addAll(files.stream().map(File::new).toList());
-        return this;
+        return classpath(files.stream().map(File::new).toList());
     }
 
     /**
@@ -448,10 +451,10 @@ public class SourceSet {
      *
      * @param files one or more files
      * @return this operation instance
+     * @see #includes(Collection)
      */
     public SourceSet includes(File... files) {
-        includes_.addAll(List.of(files));
-        return this;
+        return includes(List.of(files));
     }
 
     /**
@@ -464,6 +467,7 @@ public class SourceSet {
      *
      * @param files one or more files
      * @return this operation instance
+     * @see #classpathStrings(Collection)
      */
     public SourceSet includes(String... files) {
         return includesStrings(List.of(files));
@@ -479,6 +483,7 @@ public class SourceSet {
      *
      * @param files one or more files
      * @return this operation instance
+     * @see #classpathPaths(Collection)
      */
     public SourceSet includes(Path... files) {
         return includesPaths(List.of(files));
@@ -504,6 +509,7 @@ public class SourceSet {
      *
      * @param files the collection of files
      * @return this operation instance
+     * @see #includes(File...)
      */
     public SourceSet includes(Collection<File> files) {
         includes_.addAll(files);
@@ -520,10 +526,10 @@ public class SourceSet {
      *
      * @param files the collection of files
      * @return this operation instance
+     * @see #includes(Path...)
      */
     public SourceSet includesPaths(Collection<Path> files) {
-        includes_.addAll(files.stream().map(Path::toFile).toList());
-        return this;
+        return includes(files.stream().map(Path::toFile).toList());
     }
 
     /**
@@ -536,10 +542,10 @@ public class SourceSet {
      *
      * @param files the collection of files
      * @return this operation instance
+     * @see #classpath(String...)
      */
     public SourceSet includesStrings(Collection<String> files) {
-        includes_.addAll(files.stream().map(File::new).toList());
-        return this;
+        return includes(files.stream().map(File::new).toList());
     }
 
     /**
@@ -579,8 +585,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet jdkVersion(int jdkVersion) {
-        jdkVersion_ = String.valueOf(jdkVersion);
-        return this;
+        return jdkVersion(String.valueOf(jdkVersion));
     }
 
     /**
@@ -601,8 +606,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet languageVersion(int languageVersion) {
-        languageVersion_ = String.valueOf(languageVersion);
-        return this;
+        return languageVersion(String.valueOf(languageVersion));
     }
 
     /**
@@ -704,8 +708,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet perPackageOptions(String... perPackageOptions) {
-        perPackageOptions_.addAll(List.of(perPackageOptions));
-        return this;
+        return perPackageOptions(List.of(perPackageOptions));
     }
 
     /**
@@ -734,6 +737,7 @@ public class SourceSet {
      *
      * @param samples the samples
      * @return this operation instance
+     * @see #samples(File...)
      */
     public SourceSet samples(Collection<File> samples) {
         samples_.addAll(samples);
@@ -757,6 +761,7 @@ public class SourceSet {
      *
      * @param samples nne or more samples
      * @return this operation instance
+     * @see #samples(Collection)
      */
     public SourceSet samples(File... samples) {
         return samples(List.of(samples));
@@ -770,6 +775,7 @@ public class SourceSet {
      *
      * @param samples nne or more samples
      * @return this operation instance
+     * @see #samplesStrings(Collection)
      */
     public SourceSet samples(String... samples) {
         return samplesStrings(List.of(samples));
@@ -783,6 +789,7 @@ public class SourceSet {
      *
      * @param samples nne or more samples
      * @return this operation instance
+     * @see #samplesPaths(Collection)
      */
     public SourceSet samples(Path... samples) {
         return samplesPaths(List.of(samples));
@@ -796,10 +803,10 @@ public class SourceSet {
      *
      * @param samples the samples
      * @return this operation instance
+     * @see #samples(Path...)
      */
     public SourceSet samplesPaths(Collection<Path> samples) {
-        samples_.addAll(samples.stream().map(Path::toFile).toList());
-        return this;
+        return samples(samples.stream().map(Path::toFile).toList());
     }
 
     /**
@@ -810,10 +817,10 @@ public class SourceSet {
      *
      * @param samples the samples
      * @return this operation instance
+     * @see #samples(String...)
      */
     public SourceSet samplesStrings(Collection<String> samples) {
-        samples_.addAll(samples.stream().map(File::new).toList());
-        return this;
+        return samples(samples.stream().map(File::new).toList());
     }
 
     /**
@@ -850,6 +857,7 @@ public class SourceSet {
      *
      * @param src the source code roots
      * @return this operation instance
+     * @see #src(File...)
      */
     public SourceSet src(Collection<File> src) {
         src_.addAll(src);
@@ -864,6 +872,7 @@ public class SourceSet {
      *
      * @param src pne ore moe source code roots
      * @return this operation instance
+     * @see #src(Collection)
      */
     public SourceSet src(File... src) {
         return src(List.of(src));
@@ -877,6 +886,7 @@ public class SourceSet {
      *
      * @param src pne ore moe source code roots
      * @return this operation instance
+     * @see #srcStrings(Collection)
      */
     public SourceSet src(String... src) {
         return srcStrings(List.of(src));
@@ -890,6 +900,7 @@ public class SourceSet {
      *
      * @param src pne ore moe source code roots
      * @return this operation instance
+     * @see #srcPaths(Collection)
      */
     public SourceSet src(Path... src) {
         return srcPaths(List.of(src));
@@ -926,8 +937,19 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet srcLink(File srcPath, String remotePath, String lineSuffix) {
-        srcLinks_.put(srcPath.getAbsolutePath(), remotePath + lineSuffix);
-        return this;
+        return srcLink(srcPath.getAbsolutePath(), remotePath, lineSuffix);
+    }
+
+    /**
+     * Sets the mapping between a source directory and a Web service for browsing the code.
+     *
+     * @param srcPath    the source path
+     * @param remotePath the remote path
+     * @param lineSuffix the line suffix
+     * @return this operation instance
+     */
+    public SourceSet srcLink(Path srcPath, String remotePath, String lineSuffix) {
+        return srcLink(srcPath.toFile().getAbsolutePath(), remotePath, lineSuffix);
     }
 
     /**
@@ -947,10 +969,10 @@ public class SourceSet {
      *
      * @param src the source code roots
      * @return this operation instance
+     * @see #src(Path...)
      */
     public SourceSet srcPaths(Collection<Path> src) {
-        src_.addAll(src.stream().map(Path::toFile).toList());
-        return this;
+        return src(src.stream().map(Path::toFile).toList());
     }
 
     /**
@@ -961,10 +983,10 @@ public class SourceSet {
      *
      * @param src the source code roots
      * @return this operation instance
+     * @see #src(String...)
      */
     public SourceSet srcStrings(Collection<String> src) {
-        src_.addAll(src.stream().map(File::new).toList());
-        return this;
+        return src(src.stream().map(File::new).toList());
     }
 
     /**
@@ -974,6 +996,7 @@ public class SourceSet {
      *
      * @param suppressedFiles the suppressed files
      * @return this operation instance
+     * @see #suppressedFiles(File...)
      */
     public SourceSet suppressedFiles(Collection<File> suppressedFiles) {
         suppressedFiles_.addAll(suppressedFiles);
@@ -996,6 +1019,7 @@ public class SourceSet {
      *
      * @param suppressedFiles one or moe suppressed files
      * @return this operation instance
+     * @see #suppressedFilesStrings(Collection)
      */
     public SourceSet suppressedFiles(String... suppressedFiles) {
         return suppressedFilesStrings(List.of(suppressedFiles));
@@ -1008,6 +1032,7 @@ public class SourceSet {
      *
      * @param suppressedFiles one or moe suppressed files
      * @return this operation instance
+     * @see #suppressedFiles(Collection)
      */
     public SourceSet suppressedFiles(File... suppressedFiles) {
         return suppressedFiles(List.of(suppressedFiles));
@@ -1020,6 +1045,7 @@ public class SourceSet {
      *
      * @param suppressedFiles one or moe suppressed files
      * @return this operation instance
+     * @see #suppressedFilesPaths(Collection)
      */
     public SourceSet suppressedFiles(Path... suppressedFiles) {
         return suppressedFilesPaths(List.of(suppressedFiles));
@@ -1032,10 +1058,10 @@ public class SourceSet {
      *
      * @param suppressedFiles the suppressed files
      * @return this operation instance
+     * @see #suppressedFiles(Path...)
      */
     public SourceSet suppressedFilesPaths(Collection<Path> suppressedFiles) {
-        suppressedFiles_.addAll(suppressedFiles.stream().map(Path::toFile).toList());
-        return this;
+        return suppressedFiles(suppressedFiles.stream().map(Path::toFile).toList());
     }
 
     /**
@@ -1045,9 +1071,9 @@ public class SourceSet {
      *
      * @param suppressedFiles the suppressed files
      * @return this operation instance
+     * @see #suppressedFiles(String...)
      */
     public SourceSet suppressedFilesStrings(Collection<String> suppressedFiles) {
-        suppressedFiles_.addAll(suppressedFiles.stream().map(File::new).toList());
-        return this;
+        return suppressedFiles(suppressedFiles.stream().map(File::new).toList());
     }
 }
