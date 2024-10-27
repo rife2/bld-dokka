@@ -45,13 +45,13 @@ import java.util.stream.Collectors;
 @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     public static final String SEMICOLON = ";";
-    private final static String GFM_PLUGIN_REGEXP =
+    private static final String GFM_PLUGIN_REGEXP =
             "^.*(dokka-base|analysis-kotlin-descriptors|gfm-plugin|freemarker).*\\.jar$";
-    private final static String HTML_PLUGIN_REGEXP =
+    private static final String HTML_PLUGIN_REGEXP =
             "^.*(dokka-base|analysis-kotlin-descriptors|kotlinx-html-jvm|freemarker).*\\.jar$";
-    private final static String JAVADOC_PLUGIN_REGEXP =
+    private static final String JAVADOC_PLUGIN_REGEXP =
             "^.*(dokka-base|analysis-kotlin-descriptors|javadoc-plugin|kotlin-as-java-plugin|korte-jvm).*\\.jar$";
-    private final static String JEKYLL_PLUGIN_REGEXP =
+    private static final String JEKYLL_PLUGIN_REGEXP =
             "^.*(dokka-base|analysis-kotlin-descriptors|jekyll-plugin|gfm-plugin|freemarker).*\\.jar$";
     private final Logger LOGGER = Logger.getLogger(DokkaOperation.class.getName());
     private final Map<String, String> globalLinks_ = new ConcurrentHashMap<>();
