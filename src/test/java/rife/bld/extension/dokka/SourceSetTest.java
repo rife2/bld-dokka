@@ -16,6 +16,7 @@
 
 package rife.bld.extension.dokka;
 
+import org.assertj.core.api.AutoCloseableSoftAssertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -225,28 +226,32 @@ class SourceSetTest {
                 .srcLink(Path.of(PATH_3), "remote3", "#suffix3")
                 .suppressedFiles(SUP_1, SUP_2);
 
-        assertThat(sourceSet.classpath()).as("classpath").hasSize(2);
-        assertThat(sourceSet.dependentSourceSets()).as("dependentSourceSets").hasSize(2);
-        assertThat(sourceSet.documentedVisibilities()).as("documentedVisibilities").hasSize(2);
-        assertThat(sourceSet.externalDocumentationLinks()).as("externalDocumentationLinks").hasSize(2);
-        assertThat(sourceSet.includes()).as("includes").hasSize(4);
-        assertThat(sourceSet.perPackageOptions()).as("perPackageOptions").hasSize(2);
-        assertThat(sourceSet.samples()).as("samples").hasSize(2);
-        assertThat(sourceSet.src()).as("src").hasSize(4);
-        assertThat(sourceSet.srcLinks()).as("srcLinks").hasSize(3);
-        assertThat(sourceSet.suppressedFiles()).as("suppressedFiles").hasSize(2);
+        try (var softly = new AutoCloseableSoftAssertions()) {
+            softly.assertThat(sourceSet.classpath()).as("classpath").hasSize(2);
+            softly.assertThat(sourceSet.dependentSourceSets()).as("dependentSourceSets").hasSize(2);
+            softly.assertThat(sourceSet.documentedVisibilities()).as("documentedVisibilities").hasSize(2);
+            softly.assertThat(sourceSet.externalDocumentationLinks()).as("externalDocumentationLinks").hasSize(2);
+            softly.assertThat(sourceSet.includes()).as("includes").hasSize(4);
+            softly.assertThat(sourceSet.perPackageOptions()).as("perPackageOptions").hasSize(2);
+            softly.assertThat(sourceSet.samples()).as("samples").hasSize(2);
+            softly.assertThat(sourceSet.src()).as("src").hasSize(4);
+            softly.assertThat(sourceSet.srcLinks()).as("srcLinks").hasSize(3);
+            softly.assertThat(sourceSet.suppressedFiles()).as("suppressedFiles").hasSize(2);
+        }
 
         var params = sourceSet.args();
 
-        for (var p : args) {
-            var found = false;
-            for (var a : params) {
-                if (a.startsWith(p)) {
-                    found = true;
-                    break;
+        try (var softly = new AutoCloseableSoftAssertions()) {
+            for (var p : args) {
+                var found = false;
+                for (var a : params) {
+                    if (a.startsWith(p)) {
+                        found = true;
+                        break;
+                    }
                 }
+                softly.assertThat(found).as(p + " not found.").isTrue();
             }
-            assertThat(found).as(p + " not found.").isTrue();
         }
 
         var matches = List.of(

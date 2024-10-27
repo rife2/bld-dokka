@@ -16,6 +16,7 @@
 
 package rife.bld.extension;
 
+import org.assertj.core.api.AutoCloseableSoftAssertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import rife.bld.blueprints.BaseProjectBlueprint;
@@ -107,23 +108,27 @@ class DokkaOperationTest {
                         )))
                 .suppressInheritedMembers(true);
 
-        assertThat(op.globalLinks()).as("globalLinks").hasSize(2);
-        assertThat(op.globalPackageOptions()).as("globalPackageOptions").hasSize(4);
-        assertThat(op.globalSrcLink()).as("globalSrcLink").hasSize(4);
-        assertThat(op.includes()).as("includes").hasSize(4);
-        assertThat(op.pluginConfigurations()).as("pluginConfigurations").hasSize(3);
-        assertThat(op.pluginsClasspath()).as("pluginsClasspath").hasSize(9);
+        try (var softly = new AutoCloseableSoftAssertions()) {
+            softly.assertThat(op.globalLinks()).as("globalLinks").hasSize(2);
+            softly.assertThat(op.globalPackageOptions()).as("globalPackageOptions").hasSize(4);
+            softly.assertThat(op.globalSrcLink()).as("globalSrcLink").hasSize(4);
+            softly.assertThat(op.includes()).as("includes").hasSize(4);
+            softly.assertThat(op.pluginConfigurations()).as("pluginConfigurations").hasSize(3);
+            softly.assertThat(op.pluginsClasspath()).as("pluginsClasspath").hasSize(9);
+        }
 
         var params = op.executeConstructProcessCommandList();
-        for (var p : args) {
-            var found = false;
-            for (var a : params) {
-                if (a.startsWith(p)) {
-                    found = true;
-                    break;
+        try (var softly = new AutoCloseableSoftAssertions()) {
+            for (var p : args) {
+                var found = false;
+                for (var a : params) {
+                    if (a.startsWith(p)) {
+                        found = true;
+                        break;
+                    }
                 }
+                softly.assertThat(found).as(p + " not found.").isTrue();
             }
-            assertThat(found).as(p + " not found.").isTrue();
         }
 
         var path = EXAMPLES.getAbsolutePath();
@@ -157,14 +162,17 @@ class DokkaOperationTest {
 
         assertThat(params).hasSize(matches.size());
 
-        IntStream.range(0, params.size()).forEach(i -> {
-            if (params.get(i).contains(".jar;")) {
-                var jars = params.get(i).split(";");
-                Arrays.stream(jars).forEach(jar -> assertThat(matches.get(i)).as(matches.get(i)).contains(jar));
-            } else {
-                assertThat(params.get(i)).as(params.get(i)).isEqualTo(matches.get(i));
-            }
-        });
+        try (var softly = new AutoCloseableSoftAssertions()) {
+            IntStream.range(0, params.size()).forEach(i -> {
+                if (params.get(i).contains(".jar;")) {
+                    var jars = params.get(i).split(";");
+                    Arrays.stream(jars).forEach(jar ->
+                            softly.assertThat(matches.get(i)).as(matches.get(i)).contains(jar));
+                } else {
+                    softly.assertThat(params.get(i)).as(params.get(i)).isEqualTo(matches.get(i));
+                }
+            });
+        }
     }
 
     @Test
