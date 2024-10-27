@@ -171,7 +171,7 @@ class SourceSetTest {
         var matches = List.of(
                 "-classpath", localPath(PATH_1, PATH_2),
                 "-dependentSourceSets", "set1/set2;set3/set4",
-                "-externalDocumentationLinks", "link3^link4^^link1^link2",
+                "-externalDocumentationLinks", "link1^link2^^link3^link4",
                 "-perPackageOptions", OPTION_1 + ';' + OPTION_2,
                 "-samples", localPath(SAMPLES_1, SAMPLES_2, SAMPLES_3),
                 "-suppressedFiles", localPath(SUP_1, SUP_2, SUP_3)

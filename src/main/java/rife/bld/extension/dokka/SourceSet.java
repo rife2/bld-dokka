@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 
 /**
@@ -33,15 +33,16 @@ import java.util.stream.Collectors;
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
+@SuppressWarnings("PMD.UseConcurrentHashMap")
 public class SourceSet {
     private final Collection<File> classpath_ = new ArrayList<>();
-    private final Map<String, String> dependentSourceSets_ = new ConcurrentHashMap<>();
+    private final Map<String, String> dependentSourceSets_ = new ConcurrentSkipListMap<>();
     private final Collection<DocumentedVisibility> documentedVisibilities_ = new ArrayList<>();
-    private final Map<String, String> externalDocumentationLinks_ = new ConcurrentHashMap<>();
+    private final Map<String, String> externalDocumentationLinks_ = new ConcurrentSkipListMap<>();
     private final Collection<File> includes_ = new ArrayList<>();
     private final Collection<String> perPackageOptions_ = new ArrayList<>();
     private final Collection<File> samples_ = new ArrayList<>();
-    private final Map<String, String> srcLinks_ = new ConcurrentHashMap<>();
+    private final Map<String, String> srcLinks_ = new ConcurrentSkipListMap<>();
     private final Collection<File> src_ = new ArrayList<>();
     private final Collection<File> suppressedFiles_ = new ArrayList<>();
     private AnalysisPlatform analysisPlatform_;
