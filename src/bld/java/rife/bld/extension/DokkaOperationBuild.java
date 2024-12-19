@@ -33,13 +33,13 @@ public class DokkaOperationBuild extends Project {
     public DokkaOperationBuild() {
         pkg = "rife.bld.extension";
         name = "bld-dokka";
-        version = version(1, 0, 1);
+        version = version(1, 0, 2);
 
         javaRelease = 17;
 
         downloadSources = true;
         autoDownloadPurge = true;
-        
+
         repositories = List.of(MAVEN_LOCAL, MAVEN_CENTRAL, RIFE2_RELEASES, RIFE2_SNAPSHOTS);
 
         var dokka = version(2, 0, 0);
