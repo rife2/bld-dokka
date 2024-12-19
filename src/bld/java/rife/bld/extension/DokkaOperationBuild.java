@@ -42,7 +42,7 @@ public class DokkaOperationBuild extends Project {
         
         repositories = List.of(MAVEN_LOCAL, MAVEN_CENTRAL, RIFE2_RELEASES, RIFE2_SNAPSHOTS);
 
-        var dokka = version(1, 9, 20);
+        var dokka = version(2, 0, 0);
         scope(compile)
                 .include(dependency("org.jetbrains.dokka", "dokka-cli", dokka))
                 .include(dependency("org.jetbrains.dokka", "dokka-base", dokka))
@@ -52,8 +52,8 @@ public class DokkaOperationBuild extends Project {
                 .include(dependency("org.jetbrains.dokka", "jekyll-plugin", dokka))
                 .include(dependency("com.uwyn.rife2", "bld", version(2, 1, 0)));
         scope(test)
-                .include(dependency("org.junit.jupiter", "junit-jupiter", version(5, 11, 3)))
-                .include(dependency("org.junit.platform", "junit-platform-console-standalone", version(1, 11, 3)))
+                .include(dependency("org.junit.jupiter", "junit-jupiter", version(5, 11, 4)))
+                .include(dependency("org.junit.platform", "junit-platform-console-standalone", version(1, 11, 4)))
                 .include(dependency("org.assertj", "assertj-core", version(3, 26, 3)));
 
         javadocOperation()

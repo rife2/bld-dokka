@@ -34,13 +34,13 @@ public class ExampleBuild extends Project {
 
         repositories = List.of(MAVEN_LOCAL, MAVEN_CENTRAL, RIFE2_RELEASES);
 
-        final var kotlin = version(2, 0, 21);
+        final var kotlin = version(2, 1, 0);
         scope(compile)
                 .include(dependency("org.jetbrains.kotlin", "kotlin-stdlib", kotlin));
         scope(test)
                 .include(dependency("org.jetbrains.kotlin", "kotlin-test-junit5", kotlin))
-                .include(dependency("org.junit.jupiter", "junit-jupiter", version(5, 11, 3)))
-                .include(dependency("org.junit.platform", "junit-platform-console-standalone", version(1, 11, 3)));
+                .include(dependency("org.junit.jupiter", "junit-jupiter", version(5, 11, 4)))
+                .include(dependency("org.junit.platform", "junit-platform-console-standalone", version(1, 11, 4)));
 
         // Include the Kotlin source directory when creating or publishing sources Java Archives
         jarSourcesOperation().sourceDirectories(new File(srcMainDirectory(), "kotlin"));

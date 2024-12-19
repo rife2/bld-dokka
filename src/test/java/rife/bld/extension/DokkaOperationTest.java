@@ -132,7 +132,7 @@ class DokkaOperationTest {
         }
 
         var path = EXAMPLES.getAbsolutePath();
-        var dokkaJar = "1.9.20.jar";
+        var dokkaJar = "2.0.0.jar";
         var matches = List.of("java",
                 "-cp", path + "/lib/bld/dokka-cli-" + dokkaJar,
                 "org.jetbrains.dokka.MainKt",
