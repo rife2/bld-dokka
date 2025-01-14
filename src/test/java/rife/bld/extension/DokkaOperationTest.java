@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ class DokkaOperationTest {
         var op = new DokkaOperation()
                 .delayTemplateSubstitution(true)
                 .failOnWarning(true)
-                .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "Example"))
+                .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "example", "Example"))
                 .globalLinks("s", "gLink1")
                 .globalLinks(Map.of("s2", "gLink2"))
                 .globalPackageOptions(OPTION_1, OPTION_2)
@@ -185,7 +185,7 @@ class DokkaOperationTest {
     void executeTest() {
         var op = new DokkaOperation()
                 .fromProject(
-                        new BaseProjectBlueprint(EXAMPLES, "com.example", "examples"))
+                        new BaseProjectBlueprint(EXAMPLES, "com.example", "examples", "Examples"))
                 .outputDir("build/javadoc")
                 .outputFormat(OutputFormat.JAVADOC);
         assertThatCode(op::execute).doesNotThrowAnyException();
