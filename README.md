@@ -7,8 +7,14 @@
 [![Snapshot](https://flat.badgen.net/maven/v/metadata-url/repo.rife2.com/snapshots/com/uwyn/rife2/bld-dokka/maven-metadata.xml?label=snapshot)](https://repo.rife2.com/#/snapshots/com/uwyn/rife2/bld-dokka)
 [![GitHub CI](https://github.com/rife2/bld-dokka/actions/workflows/bld.yml/badge.svg)](https://github.com/rife2/bld-dokka/actions/workflows/bld.yml)
 
-To install, please refer to the [extensions](https://github.com/rife2/bld/wiki/Extensions) and [support](https://github.com/rife2/bld/wiki/Kotlin-Support)
-documentation.
+To install the latest version, add the following to the `lib/bld/bld-wrapper.properties` file:
+
+```properties
+bld.extension-dokka=com.uwyn.rife2:bld-dokka
+```
+
+For more information, please refer to the [extensions](https://github.com/rife2/bld/wiki/Extensions) documentation.
+
 
 ## Generate API Documentation
 
