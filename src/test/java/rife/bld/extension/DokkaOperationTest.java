@@ -19,6 +19,8 @@ package rife.bld.extension;
 import org.assertj.core.api.AutoCloseableSoftAssertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import rife.bld.blueprints.BaseProjectBlueprint;
 import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
@@ -69,6 +71,7 @@ class DokkaOperationTest {
     }
 
     @Test
+    @EnabledOnOs(OS.LINUX)
     void executeConstructProcessCommandListTest() throws IOException {
         var args = Files.readAllLines(Paths.get("src", "test", "resources", "dokka-args.txt"));
 

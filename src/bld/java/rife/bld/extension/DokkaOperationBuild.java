@@ -23,6 +23,7 @@ import rife.bld.publish.PublishLicense;
 import rife.bld.publish.PublishScm;
 
 import java.util.List;
+import java.util.Locale;
 
 import static rife.bld.dependencies.Repository.*;
 import static rife.bld.dependencies.Scope.compile;
@@ -104,10 +105,13 @@ public class DokkaOperationBuild extends Project {
 
     @Override
     public void test() throws Exception {
-        new ExecOperation()
-                .fromProject(this)
-                .command("scripts/cliargs.sh")
-                .execute();
+        var os = System.getProperty("os.name");
+        if (os != null && os.toLowerCase(Locale.US).contains("linux")) {
+            new ExecOperation()
+                    .fromProject(this)
+                    .command("scripts/cliargs.sh")
+                    .execute();
+        }
         super.test();
     }
 }
