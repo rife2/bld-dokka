@@ -18,6 +18,8 @@ package rife.bld.extension;
 
 import org.assertj.core.api.AutoCloseableSoftAssertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -44,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 
+@SuppressWarnings("PMD.UseUtilityClass")
 class DokkaOperationTest {
     private static final File EXAMPLES = new File("examples");
     private static final String FILE_1 = "file1";
@@ -70,217 +73,281 @@ class DokkaOperationTest {
         logger.setUseParentHandlers(false);
     }
 
-    @Test
-    @EnabledOnOs(OS.LINUX)
-    void executeConstructProcessCommandListTest() throws IOException {
-        var args = Files.readAllLines(Paths.get("src", "test", "resources", "dokka-args.txt"));
+    @Nested
+    @DisplayName("Execute Tests")
+    class ExecuteTests {
+        @Test
+        @EnabledOnOs(OS.LINUX)
+        void executeConstructProcessCommandListTest() throws IOException {
+            var args = Files.readAllLines(Paths.get("src", "test", "resources", "dokka-args.txt"));
 
-        assertThat(args).isNotEmpty();
+            assertThat(args).as("args should not be empty").isNotEmpty();
 
-        var jsonConf = new File("config.json");
-        var op = new DokkaOperation()
-                .delayTemplateSubstitution(true)
-                .failOnWarning(true)
-                .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "example", "Example"))
-                .globalLinks("s", "gLink1")
-                .globalLinks(Map.of("s2", "gLink2"))
-                .globalPackageOptions(OPTION_1, OPTION_2)
-                .globalPackageOptions(List.of(OPTION_3, OPTION_4))
-                .globalSrcLink("link1", "link2")
-                .globalSrcLink(List.of("link3", "link4"))
-                .includes(new File(FILE_1))
-                .includes(FILE_2)
-                .includes(List.of(new File(FILE_3), new File(FILE_4)))
-                .json(jsonConf)
-                .loggingLevel(LoggingLevel.DEBUG)
-                .moduleName("name")
-                .moduleVersion("1.0")
-                .noSuppressObviousFunctions(true)
-                .offlineMode(true)
-                .outputDir(new File(EXAMPLES, "build"))
-                .outputFormat(OutputFormat.JAVADOC)
-                .pluginConfigurations("name", "{\"json\"}")
-                .pluginConfigurations(Map.of("{\"name2\"}", "json2", "name3}", "{json3"))
-                .pluginsClasspath(new File(PATH_1))
-                .pluginsClasspath(PATH_2)
-                .pluginsClasspath(List.of(new File(PATH_3), new File(PATH_4)))
-                .sourceSet(new SourceSet().classpath(
-                        List.of(
-                                new File("examples/foo.jar"),
-                                new File("examples/bar.jar")
-                        )))
-                .suppressInheritedMembers(true);
+            var jsonConf = new File("config.json").getAbsolutePath();
+            var op = new DokkaOperation()
+                    .delayTemplateSubstitution(true)
+                    .failOnWarning(true)
+                    .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "example", "Example"))
+                    .globalLinks("s", "gLink1")
+                    .globalLinks(Map.of("s2", "gLink2"))
+                    .globalPackageOptions(OPTION_1, OPTION_2)
+                    .globalPackageOptions(List.of(OPTION_3, OPTION_4))
+                    .globalSrcLink("link1", "link2")
+                    .globalSrcLink(List.of("link3", "link4"))
+                    .includes(new File(FILE_1))
+                    .includes(FILE_2)
+                    .includes(List.of(new File(FILE_3), new File(FILE_4)))
+                    .json(jsonConf)
+                    .loggingLevel(LoggingLevel.DEBUG)
+                    .moduleName("name")
+                    .moduleVersion("1.0")
+                    .noSuppressObviousFunctions(true)
+                    .offlineMode(true)
+                    .outputDir(new File(EXAMPLES, "build"))
+                    .outputFormat(OutputFormat.JAVADOC)
+                    .pluginConfigurations("name", "{\"json\"}")
+                    .pluginConfigurations(Map.of("{\"name2\"}", "json2", "name3}", "{json3"))
+                    .pluginsClasspath(new File(PATH_1))
+                    .pluginsClasspath(PATH_2)
+                    .pluginsClasspath(List.of(new File(PATH_3), new File(PATH_4)))
+                    .sourceSet(new SourceSet().classpath(
+                            List.of(
+                                    new File("examples/foo.jar"),
+                                    new File("examples/bar.jar")
+                            )))
+                    .suppressInheritedMembers(true);
 
-        try (var softly = new AutoCloseableSoftAssertions()) {
-            softly.assertThat(op.globalLinks()).as("globalLinks").hasSize(2);
-            softly.assertThat(op.globalPackageOptions()).as("globalPackageOptions").hasSize(4);
-            softly.assertThat(op.globalSrcLink()).as("globalSrcLink").hasSize(4);
-            softly.assertThat(op.includes()).as("includes").hasSize(4);
-            softly.assertThat(op.pluginConfigurations()).as("pluginConfigurations").hasSize(3);
-            softly.assertThat(op.pluginsClasspath()).as("pluginsClasspath").hasSize(9);
-        }
+            try (var softly = new AutoCloseableSoftAssertions()) {
+                softly.assertThat(op.globalLinks()).as("globalLinks").hasSize(2);
+                softly.assertThat(op.globalPackageOptions()).as("globalPackageOptions").hasSize(4);
+                softly.assertThat(op.globalSrcLink()).as("globalSrcLink").hasSize(4);
+                softly.assertThat(op.includes()).as("includes").hasSize(4);
+                softly.assertThat(op.pluginConfigurations()).as("pluginConfigurations").hasSize(3);
+                softly.assertThat(op.pluginsClasspath()).as("pluginsClasspath").hasSize(9);
+            }
 
-        var params = op.executeConstructProcessCommandList();
-        try (var softly = new AutoCloseableSoftAssertions()) {
-            for (var p : args) {
-                var found = false;
-                for (var a : params) {
-                    if (a.startsWith(p)) {
-                        found = true;
-                        break;
+            var params = op.executeConstructProcessCommandList();
+            try (var softly = new AutoCloseableSoftAssertions()) {
+                for (var p : args) {
+                    var found = false;
+                    for (var a : params) {
+                        if (a.startsWith(p)) {
+                            found = true;
+                            break;
+                        }
                     }
+                    softly.assertThat(found).as("%s not found.", p).isTrue();
                 }
-                softly.assertThat(found).as(p + " not found.").isTrue();
+            }
+
+            var path = EXAMPLES.getAbsolutePath();
+            var dokkaJar = "2.0.0.jar";
+            var matches = List.of("java",
+                    "-cp", path + "/lib/bld/dokka-cli-" + dokkaJar,
+                    "org.jetbrains.dokka.MainKt",
+                    "-pluginsClasspath", path + "/lib/bld/dokka-base-" + dokkaJar + ';' +
+                            path + "/lib/bld/analysis-kotlin-descriptors-" + dokkaJar + ';' +
+                            path + "/lib/bld/javadoc-plugin-" + dokkaJar + ';' +
+                            path + "/lib/bld/korte-jvm-4.0.10.jar;" +
+                            path + "/lib/bld/kotlin-as-java-plugin-" + dokkaJar + ';' +
+                            TestUtils.localPath(PATH_1, PATH_2, PATH_3, PATH_4),
+                    "-sourceSet", "-src " + path + "/src/main/kotlin" + " -classpath " + path + "/foo.jar;"
+                            + path + "/bar.jar",
+                    "-outputDir", path + "/build",
+                    "-delayTemplateSubstitution",
+                    "-failOnWarning",
+                    "-globalLinks", "s^gLink1^^s2^gLink2",
+                    "-globalPackageOptions", OPTION_1 + ';' + OPTION_2 + ';' + OPTION_3 + ';' + OPTION_4,
+                    "-globalSrcLinks_", "link1;link2;link3;link4",
+                    "-includes", TestUtils.localPath(FILE_1, FILE_2, FILE_3, FILE_4),
+                    "-loggingLevel", "debug",
+                    "-moduleName", "name",
+                    "-moduleVersion", "1.0",
+                    "-noSuppressObviousFunctions",
+                    "-offlineMode",
+                    "-pluginsConfiguration", "{\\\"name2\\\"}={json2}^^{name}={\\\"json\\\"}^^{name3}}={{json3}",
+                    "-suppressInheritedMembers",
+                    jsonConf);
+
+            assertThat(params).as("params should match").hasSize(matches.size());
+
+            try (var softly = new AutoCloseableSoftAssertions()) {
+                IntStream.range(0, params.size()).forEach(i -> {
+                    if (params.get(i).contains(".jar;")) {
+                        var jars = params.get(i).split(";");
+                        Arrays.stream(jars).forEach(jar ->
+                                softly.assertThat(matches.get(i)).as(matches.get(i)).contains(jar));
+                    } else {
+                        softly.assertThat(params.get(i)).as(params.get(i)).isEqualTo(matches.get(i));
+                    }
+                });
             }
         }
 
-        var path = EXAMPLES.getAbsolutePath();
-        var dokkaJar = "2.0.0.jar";
-        var matches = List.of("java",
-                "-cp", path + "/lib/bld/dokka-cli-" + dokkaJar,
-                "org.jetbrains.dokka.MainKt",
-                "-pluginsClasspath", path + "/lib/bld/dokka-base-" + dokkaJar + ';' +
-                        path + "/lib/bld/analysis-kotlin-descriptors-" + dokkaJar + ';' +
-                        path + "/lib/bld/javadoc-plugin-" + dokkaJar + ';' +
-                        path + "/lib/bld/korte-jvm-4.0.10.jar;" +
-                        path + "/lib/bld/kotlin-as-java-plugin-" + dokkaJar + ';' +
-                        TestUtils.localPath(PATH_1, PATH_2, PATH_3, PATH_4),
-                "-sourceSet", "-src " + path + "/src/main/kotlin" + " -classpath " + path + "/foo.jar;"
-                        + path + "/bar.jar",
-                "-outputDir", path + "/build",
-                "-delayTemplateSubstitution",
-                "-failOnWarning",
-                "-globalLinks", "s^gLink1^^s2^gLink2",
-                "-globalPackageOptions", OPTION_1 + ';' + OPTION_2 + ';' + OPTION_3 + ';' + OPTION_4,
-                "-globalSrcLinks_", "link1;link2;link3;link4",
-                "-includes", TestUtils.localPath(FILE_1, FILE_2, FILE_3, FILE_4),
-                "-loggingLevel", "debug",
-                "-moduleName", "name",
-                "-moduleVersion", "1.0",
-                "-noSuppressObviousFunctions",
-                "-offlineMode",
-                "-pluginsConfiguration", "{\\\"name2\\\"}={json2}^^{name}={\\\"json\\\"}^^{name3}}={{json3}",
-                "-suppressInheritedMembers",
-                jsonConf.getAbsolutePath());
+        @Test
+        void executeNoProject() {
+            var op = new DokkaOperation();
+            assertThatThrownBy(op::execute).isInstanceOf(ExitStatusException.class);
+        }
 
-        assertThat(params).hasSize(matches.size());
-
-        try (var softly = new AutoCloseableSoftAssertions()) {
-            IntStream.range(0, params.size()).forEach(i -> {
-                if (params.get(i).contains(".jar;")) {
-                    var jars = params.get(i).split(";");
-                    Arrays.stream(jars).forEach(jar ->
-                            softly.assertThat(matches.get(i)).as(matches.get(i)).contains(jar));
-                } else {
-                    softly.assertThat(params.get(i)).as(params.get(i)).isEqualTo(matches.get(i));
-                }
-            });
+        @Test
+        void execute() {
+            var op = new DokkaOperation()
+                    .fromProject(
+                            new BaseProjectBlueprint(EXAMPLES, "com.example", "examples", "Examples"))
+                    .outputDir("build/javadoc")
+                    .outputFormat(OutputFormat.JAVADOC);
+            assertThatCode(op::execute).doesNotThrowAnyException();
         }
     }
 
-    @Test
-    void executeNoProjectTest() {
-        var op = new DokkaOperation();
-        assertThatThrownBy(op::execute).isInstanceOf(ExitStatusException.class);
-    }
+    @Nested
+    @DisplayName("Options Tests")
+    class OptionsTests {
+        @Nested
+        @DisplayName("Includes Tests")
+        class IncludesTests {
+            private final DokkaOperation op = new DokkaOperation();
 
-    @Test
-    void executeTest() {
-        var op = new DokkaOperation()
-                .fromProject(
-                        new BaseProjectBlueprint(EXAMPLES, "com.example", "examples", "Examples"))
-                .outputDir("build/javadoc")
-                .outputFormat(OutputFormat.JAVADOC);
-        assertThatCode(op::execute).doesNotThrowAnyException();
-    }
+            @Test
+            void includesAsFileArray() {
+                op.includes().clear();
+                op.includes(new File(FILE_1), new File(FILE_2));
+                assertThat(op.includes()).containsExactly(new File(FILE_1), new File(FILE_2));
+            }
 
-    @Test
-    void includesTest() {
-        var op = new DokkaOperation();
+            @Test
+            void includesAsFileList() {
+                op.includes().clear();
+                op.includes(List.of(new File(FILE_1), new File(FILE_2)));
+                assertThat(op.includes()).containsExactly(new File(FILE_1), new File(FILE_2));
+            }
 
-        op.includes(List.of(new File(FILE_1), new File(FILE_2)));
-        assertThat(op.includes()).as("List(File...)").containsExactly(new File(FILE_1), new File(FILE_2));
-        op.includes().clear();
+            @Test
+            void includesAsPathArray() {
+                var op = new DokkaOperation();
+                op = op.includes(Path.of(FILE_1), Path.of(FILE_2));
+                assertThat(op.includes()).containsExactly(new File(FILE_1), new File(FILE_2));
+            }
 
-        op.includes(new File(FILE_1), new File(FILE_2));
-        assertThat(op.includes()).as("File...").containsExactly(new File(FILE_1), new File(FILE_2));
-        op.includes().clear();
+            @Test
+            void includesAsPathList() {
+                op.includes().clear();
+                op.includesPaths(List.of(new File(FILE_1).toPath(), new File(FILE_2).toPath()));
+                assertThat(op.includes()).containsExactly(new File(FILE_1), new File(FILE_2));
+            }
 
-        op.includes(FILE_1, FILE_2);
-        assertThat(op.includes()).as("String...")
-                .containsExactly(new File(FILE_1), new File(FILE_2));
-        op.includes().clear();
+            @Test
+            void includesAsStringArray() {
+                op.includes().clear();
+                op.includes(FILE_1, FILE_2);
+                assertThat(op.includes()).containsExactly(new File(FILE_1), new File(FILE_2));
+            }
 
-        op = op.includes(Path.of(FILE_1), Path.of(FILE_2));
-        assertThat(op.includes()).as("Path...")
-                .containsExactly(new File(FILE_1), new File(FILE_2));
-        op.includes().clear();
+            @Test
+            void includesAsStringList() {
+                op.includes().clear();
+                op.includesStrings(List.of(FILE_1, FILE_2));
+                assertThat(op.includes()).containsExactly(new File(FILE_1), new File(FILE_2));
+            }
+        }
 
-        op.includesPaths(List.of(new File(FILE_1).toPath(), new File(FILE_2).toPath()));
-        assertThat(op.includes()).as("List(Path...)").containsExactly(new File(FILE_1), new File(FILE_2));
-        op.includes().clear();
+        @Nested
+        @DisplayName("JSON Tests")
+        class JsonTests {
+            private final DokkaOperation op = new DokkaOperation();
 
-        op.includesStrings(List.of(FILE_1, FILE_2));
-        assertThat(op.includes()).as("List(String...)").containsExactly(new File(FILE_1), new File(FILE_2));
-        op.includes().clear();
-    }
+            @Test
+            void jsonAsFile() {
+                op.json(new File(FILE_3));
+                assertThat(op.json()).isEqualTo(new File(FILE_3));
+            }
 
-    @Test
-    void jsonTest() {
-        var file1 = new File(FILE_1);
-        var op = new DokkaOperation().json(file1);
-        assertThat(op.json()).isEqualTo(file1);
+            @Test
+            void jsonAsPath() {
+                var op = new DokkaOperation();
+                op = op.json(Path.of(FILE_2));
+                assertThat(op.json()).isEqualTo(new File(FILE_2));
+            }
 
-        var file2 = Path.of(FILE_2);
-        op = op.json(file2);
-        assertThat(op.json()).isEqualTo(file2.toFile());
+            @Test
+            void jsonAsString() {
+                op.json(FILE_1);
+                assertThat(op.json()).isEqualTo(new File(FILE_1));
+            }
+        }
 
-        op = op.json(FILE_3);
-        assertThat(op.json()).isEqualTo(new File(FILE_3));
-    }
+        @Nested
+        @DisplayName("Output Dir Tests")
+        class OutputDirTests {
+            private final DokkaOperation op = new DokkaOperation();
 
-    @Test
-    void outputDirTest() {
-        var javadoc = "build/javadoc";
-        var op = new DokkaOperation().outputDir(javadoc);
-        assertThat(op.outputDir()).isEqualTo(new File(javadoc));
+            @Test
+            void outputDirAsFile() {
+                op.outputDir(new File(FILE_1));
+                assertThat(op.outputDir()).isEqualTo(new File(FILE_1));
+            }
 
-        var build = "build";
-        op = op.outputDir(Path.of(build));
-        assertThat(op.outputDir()).isEqualTo(new File(build));
+            @Test
+            void outputDirAsPath() {
+                var op = new DokkaOperation();
+                op = op.outputDir(Path.of(FILE_2));
+                assertThat(op.outputDir()).isEqualTo(new File(FILE_2));
+            }
 
-        op = op.outputDir(new File(javadoc));
-        assertThat(op.outputDir()).isEqualTo(new File(javadoc));
-    }
+            @Test
+            void outputDirAsString() {
+                op.outputDir(FILE_3);
+                assertThat(op.outputDir()).isEqualTo(new File(FILE_3));
+            }
+        }
 
-    @Test
-    void pluginClasspathTest() {
-        var op = new DokkaOperation();
+        @Nested
+        @DisplayName("Plugin Classpath Tests")
+        class PluginClasspathTests {
+            private final DokkaOperation op = new DokkaOperation();
 
-        op.pluginsClasspath(List.of(new File(FILE_1), new File(FILE_2)));
-        assertThat(op.pluginsClasspath()).as("List(File...)").containsExactly(new File(FILE_1), new File(FILE_2));
-        op.pluginsClasspath().clear();
+            @Test
+            void pluginClasspathAsFileArray() {
+                op.pluginsClasspath().clear();
+                op.pluginsClasspath(new File(FILE_1), new File(FILE_2));
+                assertThat(op.pluginsClasspath()).containsExactly(new File(FILE_1), new File(FILE_2));
+            }
 
-        op.pluginsClasspath(new File(FILE_1), new File(FILE_2));
-        assertThat(op.pluginsClasspath()).as("File...").containsExactly(new File(FILE_1), new File(FILE_2));
-        op.pluginsClasspath().clear();
+            @Test
+            void pluginClasspathAsFileList() {
+                op.pluginsClasspath().clear();
+                op.pluginsClasspath(List.of(new File(FILE_1), new File(FILE_2)));
+                assertThat(op.pluginsClasspath()).containsExactly(new File(FILE_1), new File(FILE_2));
+            }
 
-        op.pluginsClasspath(FILE_1, FILE_2);
-        assertThat(op.pluginsClasspath()).as("String...")
-                .containsExactly(new File(FILE_1), new File(FILE_2));
-        op.pluginsClasspath().clear();
+            @Test
+            void pluginClasspathAsPathArray() {
+                var op = new DokkaOperation();
+                op = op.pluginsClasspath(Path.of(FILE_1), Path.of(FILE_2));
+                assertThat(op.pluginsClasspath()).containsExactly(new File(FILE_1), new File(FILE_2));
+            }
 
-        op = op.pluginsClasspath(Path.of(FILE_1), Path.of(FILE_2));
-        assertThat(op.pluginsClasspath()).as("Path...")
-                .containsExactly(new File(FILE_1), new File(FILE_2));
-        op.pluginsClasspath().clear();
+            @Test
+            void pluginClasspathAsPathList() {
+                op.pluginsClasspath().clear();
+                op.pluginsClasspathPaths(List.of(new File(FILE_1).toPath(), new File(FILE_2).toPath()));
+                assertThat(op.pluginsClasspath()).containsExactly(new File(FILE_1), new File(FILE_2));
+            }
 
-        op.pluginsClasspathPaths(List.of(new File(FILE_1).toPath(), new File(FILE_2).toPath()));
-        assertThat(op.pluginsClasspath()).as("List(Path...)").containsExactly(new File(FILE_1), new File(FILE_2));
-        op.pluginsClasspath().clear();
+            @Test
+            void pluginClasspathAsStringArray() {
+                op.pluginsClasspath().clear();
+                op.pluginsClasspath(FILE_1, FILE_2);
+                assertThat(op.pluginsClasspath()).containsExactly(new File(FILE_1), new File(FILE_2));
+            }
 
-        op.pluginsClasspathStrings(List.of(FILE_1, FILE_2));
-        assertThat(op.pluginsClasspath()).as("List(String...)").containsExactly(new File(FILE_1), new File(FILE_2));
-        op.pluginsClasspath().clear();
+            @Test
+            void pluginClasspathAsStringList() {
+                op.pluginsClasspath().clear();
+                op.pluginsClasspathStrings(List.of(FILE_1, FILE_2));
+                assertThat(op.pluginsClasspath()).containsExactly(new File(FILE_1), new File(FILE_2));
+            }
+        }
     }
 }
