@@ -29,8 +29,8 @@ public class ExampleBuild extends Project {
 
         javaRelease = 17;
 
-        downloadSources = true;
         autoDownloadPurge = true;
+        downloadSources = true;
 
         repositories = List.of(MAVEN_LOCAL, MAVEN_CENTRAL, RIFE2_RELEASES);
 
