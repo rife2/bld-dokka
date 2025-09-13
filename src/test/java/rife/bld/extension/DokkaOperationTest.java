@@ -17,16 +17,18 @@
 package rife.bld.extension;
 
 import org.assertj.core.api.AutoCloseableSoftAssertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import rife.bld.blueprints.BaseProjectBlueprint;
 import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
 import rife.bld.extension.dokka.SourceSet;
+import rife.bld.extension.testing.LoggingExtension;
 import rife.bld.operations.exceptions.ExitStatusException;
 
 import java.io.File;
@@ -37,15 +39,13 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 
+@ExtendWith(LoggingExtension.class)
 @SuppressWarnings("PMD.UseUtilityClass")
 class DokkaOperationTest {
     private static final File EXAMPLES = new File("examples");
@@ -53,6 +53,11 @@ class DokkaOperationTest {
     private static final String FILE_2 = "file2";
     private static final String FILE_3 = "file3";
     private static final String FILE_4 = "file4";
+
+    @RegisterExtension
+    @SuppressWarnings({"unused"})
+    private static final LoggingExtension LOGGING_EXTENSION = new LoggingExtension(DokkaOperation.class.getName());
+
     private static final String OPTION_1 = "option1";
     private static final String OPTION_2 = "option2";
     private static final String OPTION_3 = "option3";
@@ -62,20 +67,19 @@ class DokkaOperationTest {
     private static final String PATH_3 = "path3";
     private static final String PATH_4 = "path4";
 
-    @BeforeAll
-    static void beforeAll() {
-        var level = Level.ALL;
-        var logger = Logger.getLogger("rife.bld.extension");
-        var consoleHandler = new ConsoleHandler();
-        consoleHandler.setLevel(level);
-        logger.addHandler(consoleHandler);
-        logger.setLevel(level);
-        logger.setUseParentHandlers(false);
-    }
-
     @Nested
     @DisplayName("Execute Tests")
     class ExecuteTests {
+        @Test
+        void execute() {
+            var op = new DokkaOperation()
+                    .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "examples",
+                            "Examples"))
+                    .outputDir("build/javadoc")
+                    .outputFormat(OutputFormat.JAVADOC);
+            assertThatCode(op::execute).doesNotThrowAnyException();
+        }
+
         @Test
         @EnabledOnOs(OS.LINUX)
         void executeConstructProcessCommandListTest() throws IOException {
@@ -87,7 +91,8 @@ class DokkaOperationTest {
             var op = new DokkaOperation()
                     .delayTemplateSubstitution(true)
                     .failOnWarning(true)
-                    .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "example", "Example"))
+                    .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "example",
+                            "Example"))
                     .globalLinks("s", "gLink1")
                     .globalLinks(Map.of("s2", "gLink2"))
                     .globalPackageOptions(OPTION_1, OPTION_2)
@@ -188,16 +193,6 @@ class DokkaOperationTest {
         void executeNoProject() {
             var op = new DokkaOperation();
             assertThatThrownBy(op::execute).isInstanceOf(ExitStatusException.class);
-        }
-
-        @Test
-        void execute() {
-            var op = new DokkaOperation()
-                    .fromProject(
-                            new BaseProjectBlueprint(EXAMPLES, "com.example", "examples", "Examples"))
-                    .outputDir("build/javadoc")
-                    .outputFormat(OutputFormat.JAVADOC);
-            assertThatCode(op::execute).doesNotThrowAnyException();
         }
     }
 

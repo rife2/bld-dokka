@@ -20,6 +20,8 @@ import org.assertj.core.api.AutoCloseableSoftAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,12 +58,11 @@ class SourceSetTest {
     private static final String SUP_2 = "sup2";
     private static final String SUP_3 = "sup3";
 
-    @Test
-    void jdkVersion() {
-        var args = new SourceSet().jdkVersion("22");
-        assertThat(args.jdkVersion()).isEqualTo("22");
-        args.jdkVersion(19);
-        assertThat(args.jdkVersion()).isEqualTo("19");
+    @ParameterizedTest
+    @ValueSource(strings = {"1.8", "19", "22"})
+    void jdkVersion(String version) {
+        var args = new SourceSet().jdkVersion(version);
+        assertThat(args.jdkVersion()).isEqualTo(version);
     }
 
     @Test
@@ -202,18 +203,16 @@ class SourceSetTest {
     @Nested
     @DisplayName("Classpath Tests")
     class ClasspathTests {
-        private final SourceSet args = new SourceSet();
-
         @Test
         void classpathAsFileArray() {
-            args.classpath().clear();
+            var args = new SourceSet();
             args.classpath(new File(CLASSPATH_1), new File(CLASSPATH_2));
             assertThat(args.classpath()).containsExactly(new File(CLASSPATH_1), new File(CLASSPATH_2));
         }
 
         @Test
         void classpathAsFileList() {
-            args.classpath().clear();
+            var args = new SourceSet();
             args.classpath(List.of(new File(CLASSPATH_1), new File(CLASSPATH_2)));
             assertThat(args.classpath()).containsExactly(new File(CLASSPATH_1), new File(CLASSPATH_2));
         }
@@ -227,21 +226,21 @@ class SourceSetTest {
 
         @Test
         void classpathAsPathList() {
-            args.classpath().clear();
+            var args = new SourceSet();
             args.classpathPaths(List.of(new File(CLASSPATH_1).toPath(), new File(CLASSPATH_2).toPath()));
             assertThat(args.classpath()).containsExactly(new File(CLASSPATH_1), new File(CLASSPATH_2));
         }
 
         @Test
         void classpathAsStringArray() {
-            args.classpath().clear();
+            var args = new SourceSet();
             args.classpath(CLASSPATH_1, CLASSPATH_2);
             assertThat(args.classpath()).containsExactly(new File(CLASSPATH_1), new File(CLASSPATH_2));
         }
 
         @Test
         void classpathAsStringList() {
-            args.classpath().clear();
+            var args = new SourceSet();
             args.classpathStrings(List.of(CLASSPATH_1, CLASSPATH_2));
             assertThat(args.classpath()).containsExactly(new File(CLASSPATH_1), new File(CLASSPATH_2));
         }
@@ -250,18 +249,16 @@ class SourceSetTest {
     @Nested
     @DisplayName("Includes Tests")
     class IncludesTests {
-        private final SourceSet args = new SourceSet();
-
         @Test
         void includesAsFileArray() {
-            args.includes().clear();
+            var args = new SourceSet();
             args.includes(new File(INCLUDES_1), new File(INCLUDES_2));
             assertThat(args.includes()).containsExactly(new File(INCLUDES_1), new File(INCLUDES_2));
         }
 
         @Test
         void includesAsFileList() {
-            args.includes().clear();
+            var args = new SourceSet();
             args.includes(List.of(new File(INCLUDES_1), new File(INCLUDES_2)));
             assertThat(args.includes()).containsExactly(new File(INCLUDES_1), new File(INCLUDES_2));
         }
@@ -275,21 +272,21 @@ class SourceSetTest {
 
         @Test
         void includesAsPathList() {
-            args.includes().clear();
+            var args = new SourceSet();
             args.includesPaths(List.of(new File(INCLUDES_1).toPath(), new File(INCLUDES_2).toPath()));
             assertThat(args.includes()).containsExactly(new File(INCLUDES_1), new File(INCLUDES_2));
         }
 
         @Test
         void includesAsStringArray() {
-            args.includes().clear();
+            var args = new SourceSet();
             args.includes(INCLUDES_1, INCLUDES_2);
             assertThat(args.includes()).containsExactly(new File(INCLUDES_1), new File(INCLUDES_2));
         }
 
         @Test
         void includesAsStringList() {
-            args.includes().clear();
+            var args = new SourceSet();
             args.includesStrings(List.of(INCLUDES_1, INCLUDES_2));
             assertThat(args.includes()).containsExactly(new File(INCLUDES_1), new File(INCLUDES_2));
         }
@@ -298,18 +295,16 @@ class SourceSetTest {
     @Nested
     @DisplayName("Samples Tests")
     class SamplesTests {
-        private final SourceSet args = new SourceSet();
-
         @Test
         void samplesAsFileArray() {
-            args.samples().clear();
+            var args = new SourceSet();
             args.samples(new File(SAMPLES_1), new File(SAMPLES_2));
             assertThat(args.samples()).containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
         }
 
         @Test
         void samplesAsFileList() {
-            args.samples().clear();
+            var args = new SourceSet();
             args.samples(List.of(new File(SAMPLES_1), new File(SAMPLES_2)));
             assertThat(args.samples()).containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
         }
@@ -323,21 +318,21 @@ class SourceSetTest {
 
         @Test
         void samplesAsPathList() {
-            args.samples().clear();
+            var args = new SourceSet();
             args.samplesPaths(List.of(new File(SAMPLES_1).toPath(), new File(SAMPLES_2).toPath()));
             assertThat(args.samples()).containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
         }
 
         @Test
         void samplesAsStringArray() {
-            args.samples().clear();
+            var args = new SourceSet();
             args.samples(SAMPLES_1, SAMPLES_2);
             assertThat(args.samples()).containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
         }
 
         @Test
         void samplesAsStringList() {
-            args.samples().clear();
+            var args = new SourceSet();
             args.samplesStrings(List.of(SAMPLES_1, SAMPLES_2));
             assertThat(args.samples()).containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
         }
@@ -349,21 +344,20 @@ class SourceSetTest {
         private static final String main = "src/main";
         private static final String src = "src";
         private static final String test = "src/test";
-        private final SourceSet args = new SourceSet();
         private final File mainFile = new File(main);
         private final File srcFile = new File(src);
         private final File testFile = new File(test);
 
         @Test
         void srcAsFileArray() {
-            args.src().clear();
+            var args = new SourceSet();
             args.src(srcFile, mainFile);
             assertThat(args.src()).containsExactly(srcFile, mainFile);
         }
 
         @Test
         void srcAsFileList() {
-            args.src().clear();
+            var args = new SourceSet();
             args.src(List.of(srcFile, mainFile));
             assertThat(args.src()).containsExactly(srcFile, mainFile);
         }
@@ -377,14 +371,14 @@ class SourceSetTest {
 
         @Test
         void srcAsPathList() {
-            args.src().clear();
+            var args = new SourceSet();
             args.srcPaths(List.of(srcFile.toPath(), testFile.toPath()));
             assertThat(args.src()).containsExactly(srcFile, testFile);
         }
 
         @Test
         void srcAsStringArray() {
-            args.src().clear();
+            var args = new SourceSet();
             args.src(src, main);
             assertThat(args.src()).containsExactly(srcFile, mainFile);
         }
@@ -399,18 +393,16 @@ class SourceSetTest {
     @Nested
     @DisplayName("Suppressed Files Tests")
     class SuppressedFilesTests {
-        private final SourceSet args = new SourceSet();
-
         @Test
         void suppressedFilesAsFileArray() {
-            args.suppressedFiles().clear();
+            var args = new SourceSet();
             args.suppressedFiles(new File(SAMPLES_1), new File(SAMPLES_2));
             assertThat(args.suppressedFiles()).containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
         }
 
         @Test
         void suppressedFilesAsFileList() {
-            args.suppressedFiles().clear();
+            var args = new SourceSet();
             args.suppressedFiles(List.of(new File(SAMPLES_1), new File(SAMPLES_2)));
             assertThat(args.suppressedFiles()).containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
         }
@@ -424,21 +416,21 @@ class SourceSetTest {
 
         @Test
         void suppressedFilesAsPathList() {
-            args.suppressedFiles().clear();
+            var args = new SourceSet();
             args.suppressedFilesPaths(List.of(new File(SAMPLES_1).toPath(), new File(SAMPLES_2).toPath()));
             assertThat(args.suppressedFiles()).containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
         }
 
         @Test
         void suppressedFilesAsStringArray() {
-            args.suppressedFiles().clear();
+            var args = new SourceSet();
             args.suppressedFiles(SAMPLES_1, SAMPLES_2);
             assertThat(args.suppressedFiles()).containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
         }
 
         @Test
         void suppressedFilesAsStringList() {
-            args.suppressedFiles().clear();
+            var args = new SourceSet();
             args.suppressedFilesStrings(List.of(SAMPLES_1, SAMPLES_2));
             assertThat(args.suppressedFiles()).containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
         }
