@@ -46,7 +46,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 
 @ExtendWith(LoggingExtension.class)
-@SuppressWarnings("PMD.UseUtilityClass")
 class DokkaOperationTest {
     private static final File EXAMPLES = new File("examples");
     private static final String FILE_1 = "file1";

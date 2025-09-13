@@ -74,7 +74,7 @@ public class DokkaOperationBuild extends Project {
                 .info()
                 .groupId("com.uwyn.rife2")
                 .artifactId(name)
-                .description("bld Dokka Extension")
+                .description("Dokka Extension for bld")
                 .url("https://github.com/rife2/bld-dokka")
                 .developer(new PublishDeveloper()
                         .id("ethauvin")
@@ -105,6 +105,15 @@ public class DokkaOperationBuild extends Project {
                 .fromProject(this)
                 .failOnViolation(true)
                 .ruleSets("config/pmd.xml")
+                .execute();
+    }
+
+
+    @BuildCommand(summary = "Runs the JUnit reporter")
+    public void reporter() throws Exception {
+        new JUnitReporterOperation()
+                .fromProject(this)
+                .failOnSummary(true)
                 .execute();
     }
 

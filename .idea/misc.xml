@@ -19,6 +19,8 @@
     <pattern value="rife.bld.extension.dokka.AnalysisPlatform" />
     <pattern value="rife.bld.extension.dokka.DocumentedVisibility" />
     <pattern value="rife.bld.extension.dokka.LoggingLevel" />
+    <pattern value="rife.bld.extension.DokkaOperationBuild" />
+    <pattern value="rife.bld.extension.DokkaOperationBuild" method="reporter" />
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_17" default="true" project-jdk-name="17" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/build" />
