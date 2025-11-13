@@ -18,6 +18,7 @@ package rife.bld.extension;
 
 import rife.bld.BuildCommand;
 import rife.bld.Project;
+import rife.bld.extension.JUnitReporterOperation;
 import rife.bld.publish.PublishDeveloper;
 import rife.bld.publish.PublishLicense;
 import rife.bld.publish.PublishScm;
@@ -104,6 +105,14 @@ public class DokkaOperationBuild extends Project {
                 .fromProject(this)
                 .failOnViolation(true)
                 .ruleSets("config/pmd.xml")
+                .execute();
+    }
+
+    @BuildCommand(summary = "Runs the JUnit reporter")
+    public void reporter() throws Exception {
+        new JUnitReporterOperation()
+                .fromProject(this)
+                .failOnSummary(true)
                 .execute();
     }
 
