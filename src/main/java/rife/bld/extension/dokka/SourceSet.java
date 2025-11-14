@@ -16,6 +16,7 @@
 
 package rife.bld.extension.dokka;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import rife.bld.extension.DokkaOperation;
 
 import java.io.File;
@@ -35,16 +36,16 @@ import java.util.stream.Collectors;
  */
 @SuppressWarnings("PMD.UseConcurrentHashMap")
 public class SourceSet {
-    private final Collection<File> classpath_ = new ArrayList<>();
+    private final List<File> classpath_ = new ArrayList<>();
     private final Map<String, String> dependentSourceSets_ = new ConcurrentSkipListMap<>();
-    private final Collection<DocumentedVisibility> documentedVisibilities_ = new ArrayList<>();
+    private final List<DocumentedVisibility> documentedVisibilities_ = new ArrayList<>();
     private final Map<String, String> externalDocumentationLinks_ = new ConcurrentSkipListMap<>();
-    private final Collection<File> includes_ = new ArrayList<>();
-    private final Collection<String> perPackageOptions_ = new ArrayList<>();
-    private final Collection<File> samples_ = new ArrayList<>();
+    private final List<File> includes_ = new ArrayList<>();
+    private final List<String> perPackageOptions_ = new ArrayList<>();
+    private final List<File> samples_ = new ArrayList<>();
     private final Map<String, String> srcLinks_ = new ConcurrentSkipListMap<>();
-    private final Collection<File> src_ = new ArrayList<>();
-    private final Collection<File> suppressedFiles_ = new ArrayList<>();
+    private final List<File> src_ = new ArrayList<>();
+    private final List<File> suppressedFiles_ = new ArrayList<>();
     private AnalysisPlatform analysisPlatform_;
     private String apiVersion_;
     private String displayName_;
@@ -76,9 +77,8 @@ public class SourceSet {
      * @param apiVersion the api version
      * @return this operation instance
      */
-    public SourceSet apiVersion(String apiVersion) {
-        apiVersion_ = apiVersion;
-        return this;
+    public SourceSet apiVersion(int apiVersion) {
+        return apiVersion(String.valueOf(apiVersion));
     }
 
     /**
@@ -87,8 +87,9 @@ public class SourceSet {
      * @param apiVersion the api version
      * @return this operation instance
      */
-    public SourceSet apiVersion(int apiVersion) {
-        return apiVersion(String.valueOf(apiVersion));
+    public SourceSet apiVersion(String apiVersion) {
+        apiVersion_ = apiVersion;
+        return this;
     }
 
     /**
@@ -253,12 +254,43 @@ public class SourceSet {
      * <p>
      * This option accepts both {@code .jar} and {@code .klib} files.
      *
+     * @param files the collection of files
+     * @return this operation instance
+     * @see #classpath(File...)
+     */
+    public SourceSet classpath(Collection<File> files) {
+        classpath_.addAll(files);
+        return this;
+    }
+
+    /**
+     * Sets classpath for analysis and interactive samples.
+     * <p>
+     * This is useful if some types that come from dependencies are not resolved/picked up automatically.
+     * <p>
+     * This option accepts both {@code .jar} and {@code .klib} files.
+     *
      * @param files one or more file
      * @return this operation instance
      * @see #classpathStrings(Collection)
      */
     public SourceSet classpath(String... files) {
         return classpathStrings(List.of(files));
+    }
+
+    /**
+     * Sets classpath for analysis and interactive samples.
+     * <p>
+     * This is useful if some types that come from dependencies are not resolved/picked up automatically.
+     * <p>
+     * This option accepts both {@code .jar} and {@code .klib} files.
+     *
+     * @param files the collection of files
+     * @return this operation instance
+     * @see #classpath(String...)
+     */
+    public SourceSet classpathStrings(Collection<String> files) {
+        return classpath(files.stream().map(File::new).toList());
     }
 
     /**
@@ -285,31 +317,6 @@ public class SourceSet {
      *
      * @param files the collection of files
      * @return this operation instance
-     * @see #classpath(File...)
-     */
-    public SourceSet classpath(Collection<File> files) {
-        classpath_.addAll(files);
-        return this;
-    }
-
-    /**
-     * Retrieves the classpath for analysis and interactive samples.
-     *
-     * @return the classpath
-     */
-    public Collection<File> classpath() {
-        return classpath_;
-    }
-
-    /**
-     * Sets classpath for analysis and interactive samples.
-     * <p>
-     * This is useful if some types that come from dependencies are not resolved/picked up automatically.
-     * <p>
-     * This option accepts both {@code .jar} and {@code .klib} files.
-     *
-     * @param files the collection of files
-     * @return this operation instance
      * @see #classpath(Path...)
      */
     public SourceSet classpathPaths(Collection<Path> files) {
@@ -317,18 +324,13 @@ public class SourceSet {
     }
 
     /**
-     * Sets classpath for analysis and interactive samples.
-     * <p>
-     * This is useful if some types that come from dependencies are not resolved/picked up automatically.
-     * <p>
-     * This option accepts both {@code .jar} and {@code .klib} files.
+     * Retrieves the classpath for analysis and interactive samples.
      *
-     * @param files the collection of files
-     * @return this operation instance
-     * @see #classpath(String...)
+     * @return the classpath
      */
-    public SourceSet classpathStrings(Collection<String> files) {
-        return classpath(files.stream().map(File::new).toList());
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public List<File> classpath() {
+        return classpath_;
     }
 
     /**
@@ -348,6 +350,7 @@ public class SourceSet {
      *
      * @return the names
      */
+    @SuppressFBWarnings("EI_EXPOSE_REP")
     public Map<String, String> dependentSourceSets() {
         return dependentSourceSets_;
     }
@@ -401,7 +404,8 @@ public class SourceSet {
      *
      * @return the documented visibilities
      */
-    public Collection<DocumentedVisibility> documentedVisibilities() {
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public List<DocumentedVisibility> documentedVisibilities() {
         return documentedVisibilities_;
     }
 
@@ -424,6 +428,7 @@ public class SourceSet {
      *
      * @return the documentation links.
      */
+    @SuppressFBWarnings("EI_EXPOSE_REP")
     public Map<String, String> externalDocumentationLinks() {
         return externalDocumentationLinks_;
     }
@@ -466,48 +471,6 @@ public class SourceSet {
      * The contents of the specified files are parsed and embedded into documentation as module and package
      * descriptions.
      *
-     * @param files one or more files
-     * @return this operation instance
-     * @see #classpathStrings(Collection)
-     */
-    public SourceSet includes(String... files) {
-        return includesStrings(List.of(files));
-    }
-
-    /**
-     * Sets the Markdown files that contain module and package documentation.
-     * <p>
-     * The Markdown files that contain module and package documentation.
-     * <p>
-     * The contents of the specified files are parsed and embedded into documentation as module and package
-     * descriptions.
-     *
-     * @param files one or more files
-     * @return this operation instance
-     * @see #classpathPaths(Collection)
-     */
-    public SourceSet includes(Path... files) {
-        return includesPaths(List.of(files));
-    }
-
-
-    /**
-     * Retrieves the Markdown files that contain module and package documentation.
-     *
-     * @return the markdown files
-     */
-    public Collection<File> includes() {
-        return includes_;
-    }
-
-    /**
-     * Sets the Markdown files that contain module and package documentation.
-     * <p>
-     * The Markdown files that contain module and package documentation.
-     * <p>
-     * The contents of the specified files are parsed and embedded into documentation as module and package
-     * descriptions.
-     *
      * @param files the collection of files
      * @return this operation instance
      * @see #includes(File...)
@@ -525,12 +488,12 @@ public class SourceSet {
      * The contents of the specified files are parsed and embedded into documentation as module and package
      * descriptions.
      *
-     * @param files the collection of files
+     * @param files one or more files
      * @return this operation instance
-     * @see #includes(Path...)
+     * @see #classpathStrings(Collection)
      */
-    public SourceSet includesPaths(Collection<Path> files) {
-        return includes(files.stream().map(Path::toFile).toList());
+    public SourceSet includes(String... files) {
+        return includesStrings(List.of(files));
     }
 
     /**
@@ -550,19 +513,45 @@ public class SourceSet {
     }
 
     /**
-     * Sets the version of JDK to use for linking to JDK Javadocs.
+     * Sets the Markdown files that contain module and package documentation.
      * <p>
-     * The JDK version to use when generating external documentation links for Java types.
+     * The Markdown files that contain module and package documentation.
      * <p>
-     * For example, if you use {@link java.util.UUID} in some public declaration signature, and this option is set to 8,
-     * Dokka generates an external documentation link to JDK 8 Javadocs for it.
+     * The contents of the specified files are parsed and embedded into documentation as module and package
+     * descriptions.
      *
-     * @param jdkVersion the JDK version
+     * @param files one or more files
      * @return this operation instance
+     * @see #classpathPaths(Collection)
      */
-    public SourceSet jdkVersion(String jdkVersion) {
-        jdkVersion_ = jdkVersion;
-        return this;
+    public SourceSet includes(Path... files) {
+        return includesPaths(List.of(files));
+    }
+
+    /**
+     * Sets the Markdown files that contain module and package documentation.
+     * <p>
+     * The Markdown files that contain module and package documentation.
+     * <p>
+     * The contents of the specified files are parsed and embedded into documentation as module and package
+     * descriptions.
+     *
+     * @param files the collection of files
+     * @return this operation instance
+     * @see #includes(Path...)
+     */
+    public SourceSet includesPaths(Collection<Path> files) {
+        return includes(files.stream().map(Path::toFile).toList());
+    }
+
+    /**
+     * Retrieves the Markdown files that contain module and package documentation.
+     *
+     * @return the markdown files
+     */
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public List<File> includes() {
+        return includes_;
     }
 
     /**
@@ -590,13 +579,18 @@ public class SourceSet {
     }
 
     /**
-     * Sets the language version used for setting up analysis and samples.
+     * Sets the version of JDK to use for linking to JDK Javadocs.
+     * <p>
+     * The JDK version to use when generating external documentation links for Java types.
+     * <p>
+     * For example, if you use {@link java.util.UUID} in some public declaration signature, and this option is set to 8,
+     * Dokka generates an external documentation link to JDK 8 Javadocs for it.
      *
-     * @param languageVersion the language version
+     * @param jdkVersion the JDK version
      * @return this operation instance
      */
-    public SourceSet languageVersion(String languageVersion) {
-        languageVersion_ = languageVersion;
+    public SourceSet jdkVersion(String jdkVersion) {
+        jdkVersion_ = jdkVersion;
         return this;
     }
 
@@ -608,6 +602,17 @@ public class SourceSet {
      */
     public SourceSet languageVersion(int languageVersion) {
         return languageVersion(String.valueOf(languageVersion));
+    }
+
+    /**
+     * Sets the language version used for setting up analysis and samples.
+     *
+     * @param languageVersion the language version
+     * @return this operation instance
+     */
+    public SourceSet languageVersion(String languageVersion) {
+        languageVersion_ = languageVersion;
+        return this;
     }
 
     /**
@@ -657,35 +662,12 @@ public class SourceSet {
     }
 
     /**
-     * Set the package source set configuration.
-     * <p>
-     * A set of parameters specific to matched packages within this source set.
-     * <p>
-     * Using format:
-     * <ul>
-     * <li>matchingRegexp</li>
-     * <li>-deprecated</li>
-     * <li>-privateApi</li>
-     * <li>+warnUndocumented</li>
-     * <li>+suppress</li>
-     * <li>+visibility:PUBLIC</li>
-     * <li>...</li>
-     * </ul>
-     *
-     * @param perPackageOptions the per package options
-     * @return this operation instance
-     */
-    public SourceSet perPackageOptions(Collection<String> perPackageOptions) {
-        perPackageOptions_.addAll(perPackageOptions);
-        return this;
-    }
-
-    /**
      * Retrieves the package source set configuration.
      *
      * @return the package source set configuration
      */
-    public Collection<String> perPackageOptions() {
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public List<String> perPackageOptions() {
         return perPackageOptions_;
     }
 
@@ -713,6 +695,30 @@ public class SourceSet {
     }
 
     /**
+     * Set the package source set configuration.
+     * <p>
+     * A set of parameters specific to matched packages within this source set.
+     * <p>
+     * Using format:
+     * <ul>
+     * <li>matchingRegexp</li>
+     * <li>-deprecated</li>
+     * <li>-privateApi</li>
+     * <li>+warnUndocumented</li>
+     * <li>+suppress</li>
+     * <li>+visibility:PUBLIC</li>
+     * <li>...</li>
+     * </ul>
+     *
+     * @param perPackageOptions the per package options
+     * @return this operation instance
+     */
+    public SourceSet perPackageOptions(Collection<String> perPackageOptions) {
+        perPackageOptions_.addAll(perPackageOptions);
+        return this;
+    }
+
+    /**
      * Sets whether to report undocumented declarations.
      * <p>
      * Whether to emit warnings about visible undocumented declarations, that is declarations without KDocs after they
@@ -731,26 +737,12 @@ public class SourceSet {
     }
 
     /**
-     * Set the directories or files that contain sample functions.
-     * <p>
-     * The directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
-     * tag.
-     *
-     * @param samples the samples
-     * @return this operation instance
-     * @see #samples(File...)
-     */
-    public SourceSet samples(Collection<File> samples) {
-        samples_.addAll(samples);
-        return this;
-    }
-
-    /**
      * Retrieves the directories or files that contain sample functions.
      *
      * @return the directories or files
      */
-    public Collection<File> samples() {
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public List<File> samples() {
         return samples_;
     }
 
@@ -774,12 +766,41 @@ public class SourceSet {
      * The directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
      * tag.
      *
+     * @param samples the samples
+     * @return this operation instance
+     * @see #samples(File...)
+     */
+    public SourceSet samples(Collection<File> samples) {
+        samples_.addAll(samples);
+        return this;
+    }
+
+    /**
+     * Set the directories or files that contain sample functions.
+     * <p>
+     * The directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
+     * tag.
+     *
      * @param samples nne or more samples
      * @return this operation instance
      * @see #samplesStrings(Collection)
      */
     public SourceSet samples(String... samples) {
         return samplesStrings(List.of(samples));
+    }
+
+    /**
+     * Set the directories or files that contain sample functions.
+     * <p>
+     * The directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
+     * tag.
+     *
+     * @param samples the samples
+     * @return this operation instance
+     * @see #samples(String...)
+     */
+    public SourceSet samplesStrings(Collection<String> samples) {
+        return samples(samples.stream().map(File::new).toList());
     }
 
     /**
@@ -808,20 +829,6 @@ public class SourceSet {
      */
     public SourceSet samplesPaths(Collection<Path> samples) {
         return samples(samples.stream().map(Path::toFile).toList());
-    }
-
-    /**
-     * Set the directories or files that contain sample functions.
-     * <p>
-     * The directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
-     * tag.
-     *
-     * @param samples the samples
-     * @return this operation instance
-     * @see #samples(String...)
-     */
-    public SourceSet samplesStrings(Collection<String> samples) {
-        return samples(samples.stream().map(File::new).toList());
     }
 
     /**
@@ -856,13 +863,12 @@ public class SourceSet {
      * The source code roots to be analyzed and documented. Acceptable inputs are directories and individual
      * {@code .kt} / {@code .java} files.
      *
-     * @param src the source code roots
+     * @param src pne ore moe source code roots
      * @return this operation instance
-     * @see #src(File...)
+     * @see #src(Collection)
      */
-    public SourceSet src(Collection<File> src) {
-        src_.addAll(src);
-        return this;
+    public SourceSet src(File... src) {
+        return src(List.of(src));
     }
 
     /**
@@ -871,12 +877,13 @@ public class SourceSet {
      * The source code roots to be analyzed and documented. Acceptable inputs are directories and individual
      * {@code .kt} / {@code .java} files.
      *
-     * @param src pne ore moe source code roots
+     * @param src the source code roots
      * @return this operation instance
-     * @see #src(Collection)
+     * @see #src(File...)
      */
-    public SourceSet src(File... src) {
-        return src(List.of(src));
+    public SourceSet src(Collection<File> src) {
+        src_.addAll(src);
+        return this;
     }
 
     /**
@@ -899,6 +906,20 @@ public class SourceSet {
      * The source code roots to be analyzed and documented. Acceptable inputs are directories and individual
      * {@code .kt} / {@code .java} files.
      *
+     * @param src the source code roots
+     * @return this operation instance
+     * @see #src(String...)
+     */
+    public SourceSet srcStrings(Collection<String> src) {
+        return src(src.stream().map(File::new).toList());
+    }
+
+    /**
+     * Sets the source code roots to be analyzed and documented.
+     * <p>
+     * The source code roots to be analyzed and documented. Acceptable inputs are directories and individual
+     * {@code .kt} / {@code .java} files.
+     *
      * @param src pne ore moe source code roots
      * @return this operation instance
      * @see #srcPaths(Collection)
@@ -908,12 +929,39 @@ public class SourceSet {
     }
 
     /**
+     * Sets the source code roots to be analyzed and documented.
+     * <p>
+     * The source code roots to be analyzed and documented. Acceptable inputs are directories and individual
+     * {@code .kt} / {@code .java} files.
+     *
+     * @param src the source code roots
+     * @return this operation instance
+     * @see #src(Path...)
+     */
+    public SourceSet srcPaths(Collection<Path> src) {
+        return src(src.stream().map(Path::toFile).toList());
+    }
+
+    /**
      * Retrieves the source code roots to be analyzed and documented.
      *
      * @return the source code roots
      */
-    public Collection<File> src() {
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public List<File> src() {
         return src_;
+    }
+
+    /**
+     * Sets the mapping between a source directory and a Web service for browsing the code.
+     *
+     * @param srcPath    the source path
+     * @param remotePath the remote path
+     * @param lineSuffix the line suffix
+     * @return this operation instance
+     */
+    public SourceSet srcLink(File srcPath, String remotePath, String lineSuffix) {
+        return srcLink(srcPath.getAbsolutePath(), remotePath, lineSuffix);
     }
 
     /**
@@ -937,18 +985,6 @@ public class SourceSet {
      * @param lineSuffix the line suffix
      * @return this operation instance
      */
-    public SourceSet srcLink(File srcPath, String remotePath, String lineSuffix) {
-        return srcLink(srcPath.getAbsolutePath(), remotePath, lineSuffix);
-    }
-
-    /**
-     * Sets the mapping between a source directory and a Web service for browsing the code.
-     *
-     * @param srcPath    the source path
-     * @param remotePath the remote path
-     * @param lineSuffix the line suffix
-     * @return this operation instance
-     */
     public SourceSet srcLink(Path srcPath, String remotePath, String lineSuffix) {
         return srcLink(srcPath.toFile().getAbsolutePath(), remotePath, lineSuffix);
     }
@@ -958,50 +994,9 @@ public class SourceSet {
      *
      * @return the source links
      */
+    @SuppressFBWarnings("EI_EXPOSE_REP")
     public Map<String, String> srcLinks() {
         return srcLinks_;
-    }
-
-    /**
-     * Sets the source code roots to be analyzed and documented.
-     * <p>
-     * The source code roots to be analyzed and documented. Acceptable inputs are directories and individual
-     * {@code .kt} / {@code .java} files.
-     *
-     * @param src the source code roots
-     * @return this operation instance
-     * @see #src(Path...)
-     */
-    public SourceSet srcPaths(Collection<Path> src) {
-        return src(src.stream().map(Path::toFile).toList());
-    }
-
-    /**
-     * Sets the source code roots to be analyzed and documented.
-     * <p>
-     * The source code roots to be analyzed and documented. Acceptable inputs are directories and individual
-     * {@code .kt} / {@code .java} files.
-     *
-     * @param src the source code roots
-     * @return this operation instance
-     * @see #src(String...)
-     */
-    public SourceSet srcStrings(Collection<String> src) {
-        return src(src.stream().map(File::new).toList());
-    }
-
-    /**
-     * Sets the paths to files to be suppressed.
-     * <p>
-     * The files to be suppressed when generating documentation.
-     *
-     * @param suppressedFiles the suppressed files
-     * @return this operation instance
-     * @see #suppressedFiles(File...)
-     */
-    public SourceSet suppressedFiles(Collection<File> suppressedFiles) {
-        suppressedFiles_.addAll(suppressedFiles);
-        return this;
     }
 
     /**
@@ -1009,7 +1004,8 @@ public class SourceSet {
      *
      * @return the paths
      */
-    public Collection<File> suppressedFiles() {
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public List<File> suppressedFiles() {
         return suppressedFiles_;
     }
 
@@ -1024,6 +1020,33 @@ public class SourceSet {
      */
     public SourceSet suppressedFiles(String... suppressedFiles) {
         return suppressedFilesStrings(List.of(suppressedFiles));
+    }
+
+    /**
+     * Sets the paths to files to be suppressed.
+     * <p>
+     * The files to be suppressed when generating documentation.
+     *
+     * @param suppressedFiles the suppressed files
+     * @return this operation instance
+     * @see #suppressedFiles(String...)
+     */
+    public SourceSet suppressedFilesStrings(Collection<String> suppressedFiles) {
+        return suppressedFiles(suppressedFiles.stream().map(File::new).toList());
+    }
+
+    /**
+     * Sets the paths to files to be suppressed.
+     * <p>
+     * The files to be suppressed when generating documentation.
+     *
+     * @param suppressedFiles the suppressed files
+     * @return this operation instance
+     * @see #suppressedFiles(File...)
+     */
+    public SourceSet suppressedFiles(Collection<File> suppressedFiles) {
+        suppressedFiles_.addAll(suppressedFiles);
+        return this;
     }
 
     /**
@@ -1063,18 +1086,5 @@ public class SourceSet {
      */
     public SourceSet suppressedFilesPaths(Collection<Path> suppressedFiles) {
         return suppressedFiles(suppressedFiles.stream().map(Path::toFile).toList());
-    }
-
-    /**
-     * Sets the paths to files to be suppressed.
-     * <p>
-     * The files to be suppressed when generating documentation.
-     *
-     * @param suppressedFiles the suppressed files
-     * @return this operation instance
-     * @see #suppressedFiles(String...)
-     */
-    public SourceSet suppressedFilesStrings(Collection<String> suppressedFiles) {
-        return suppressedFiles(suppressedFiles.stream().map(File::new).toList());
     }
 }

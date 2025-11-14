@@ -18,24 +18,23 @@ package rife.bld.extension;
 
 import rife.bld.BuildCommand;
 import rife.bld.Project;
-import rife.bld.extension.JUnitReporterOperation;
 import rife.bld.publish.PublishDeveloper;
 import rife.bld.publish.PublishLicense;
 import rife.bld.publish.PublishScm;
 
+import java.io.File;
 import java.util.List;
 import java.util.Locale;
 
 import static rife.bld.dependencies.Repository.*;
-import static rife.bld.dependencies.Scope.compile;
-import static rife.bld.dependencies.Scope.test;
+import static rife.bld.dependencies.Scope.*;
 import static rife.bld.operations.JavadocOptions.DocLinkOption.NO_MISSING;
 
 public class DokkaOperationBuild extends Project {
     public DokkaOperationBuild() {
         pkg = "rife.bld.extension";
         name = "bld-dokka";
-        version = version(1, 0, 4);
+        version = version(1, 0, 5, "SNAPSHOT");
 
         javaRelease = 17;
 
@@ -54,6 +53,9 @@ public class DokkaOperationBuild extends Project {
                 .include(dependency("org.jetbrains.dokka", "gfm-plugin", dokka))
                 .include(dependency("org.jetbrains.dokka", "jekyll-plugin", dokka))
                 .include(dependency("com.uwyn.rife2", "bld", version(2, 3, 0)));
+        scope(provided)
+                .include(dependency("com.github.spotbugs", "spotbugs-annotations",
+                        version(4, 9, 8)));
         scope(test)
                 .include(dependency("com.uwyn.rife2", "bld-extensions-testing-helpers",
                         version(0, 9, 4)))
@@ -95,6 +97,18 @@ public class DokkaOperationBuild extends Project {
                 .signPassphrase(property("sign.passphrase"));
     }
 
+    @Override
+    public void test() throws Exception {
+        var os = System.getProperty("os.name");
+        if (os != null && os.toLowerCase(Locale.US).contains("linux")) {
+            new ExecOperation()
+                    .fromProject(this)
+                    .command("scripts/cliargs.sh")
+                    .execute();
+        }
+        super.test();
+    }
+
     public static void main(String[] args) {
         new DokkaOperationBuild().start(args);
     }
@@ -116,15 +130,12 @@ public class DokkaOperationBuild extends Project {
                 .execute();
     }
 
-    @Override
-    public void test() throws Exception {
-        var os = System.getProperty("os.name");
-        if (os != null && os.toLowerCase(Locale.US).contains("linux")) {
-            new ExecOperation()
-                    .fromProject(this)
-                    .command("scripts/cliargs.sh")
-                    .execute();
-        }
-        super.test();
+    @BuildCommand(summary = "Runs SpotBugs on this project")
+    public void spotbugs() throws Exception {
+        new SpotBugsOperation()
+                .fromProject(this)
+                .home("/opt/spotbugs")
+                .sourcePath(new File(srcMainDirectory(), "kotlin"))
+                .execute();
     }
 }

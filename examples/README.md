@@ -27,3 +27,8 @@
 ./bld dokka-gfm
 ./bld dokka-jekyll
 ```
+
+## Explore
+
+- [View Build File](https://github.com/rife2/bld-dokka/blob/main/examples/src/bld/java/com/example/ExampleBuild.java)
+- [View Wrapper Properties](https://github.com/rife2/bld-dokka/blob/main/examples/lib/bld/bld-wrapper.properties)

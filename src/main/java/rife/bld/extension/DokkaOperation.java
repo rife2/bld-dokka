@@ -16,6 +16,7 @@
 
 package rife.bld.extension;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import rife.bld.BaseProject;
 import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
@@ -73,65 +74,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     private SourceSet sourceSet_;
     private boolean suppressInheritedMembers_;
 
-    // Encodes to JSON adding braces as needed
-    private static String encodeJson(final String json) {
-        var sb = new StringBuilder(json);
-        if (!json.startsWith("{") || !json.endsWith("}")) {
-            sb.insert(0, "{").append('}');
-        }
-        return StringUtils.encodeJson(sb.toString());
-    }
-
-    /**
-     * Returns the JARs contained in a given directory.
-     * <p>
-     * Sources and Javadoc JARs are ignored.
-     *
-     * @param directory the directory
-     * @param regex     the regular expression to match
-     * @return the Java Archives
-     */
-    public static List<File> getJarList(File directory, String regex) {
-        var jars = new ArrayList<File>();
-
-        if (directory.isDirectory()) {
-            var files = directory.listFiles();
-            if (files != null) {
-                for (var f : files) {
-                    if (!f.getName().endsWith("-sources.jar") && (!f.getName().endsWith("-javadoc.jar")) &&
-                            f.getName().matches(regex)) {
-                        jars.add(f);
-                    }
-                }
-            }
-        }
-
-        return jars;
-    }
-
-    /**
-     * Determines if the given string is not blank.
-     *
-     * @param s the string
-     * @return {@code true} if not blank, {@code false} otherwise.
-     */
-    public static boolean isNotBlank(String s) {
-        return s != null && !s.isBlank();
-    }
-
-    /**
-     * Sets the delay substitution of some elements.
-     * <p>
-     * Used in incremental builds of multimodule projects.
-     *
-     * @param delayTemplateSubstitution the delay
-     * @return this operation instance
-     */
-    public DokkaOperation delayTemplateSubstitution(Boolean delayTemplateSubstitution) {
-        delayTemplateSubstitution_ = delayTemplateSubstitution;
-        return this;
-    }
-
     @Override
     public void execute() throws IOException, InterruptedException, ExitStatusException {
         if (project_ == null) {
@@ -151,7 +93,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      */
     @Override
     protected List<String> executeConstructProcessCommandList() {
-        final List<String> args = new ArrayList<>();
+        final List<String> args = new ArrayList<>(50);
 
         if (project_ != null) {
             // java
@@ -285,6 +227,52 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
+     * Returns the JARs contained in a given directory.
+     * <p>
+     * Sources and Javadoc JARs are ignored.
+     *
+     * @param directory the directory
+     * @param regex     the regular expression to match
+     * @return the Java Archives
+     */
+    public static List<File> getJarList(File directory, String regex) {
+        var jars = new ArrayList<File>();
+
+        if (directory.isDirectory()) {
+            var files = directory.listFiles();
+            if (files != null) {
+                for (var f : files) {
+                    if (!f.getName().endsWith("-sources.jar") && (!f.getName().endsWith("-javadoc.jar")) &&
+                            f.getName().matches(regex)) {
+                        jars.add(f);
+                    }
+                }
+            }
+        }
+
+        return jars;
+    }
+
+    /**
+     * Determines if the given string is not blank.
+     *
+     * @param s the string
+     * @return {@code true} if not blank, {@code false} otherwise.
+     */
+    public static boolean isNotBlank(String s) {
+        return s != null && !s.isBlank();
+    }
+
+    // Encodes to JSON adding braces as needed
+    private static String encodeJson(final String json) {
+        var sb = new StringBuilder(json);
+        if (!json.startsWith("{") || !json.endsWith("}")) {
+            sb.insert(0, "{").append('}');
+        }
+        return StringUtils.encodeJson(sb.toString());
+    }
+
+    /**
      * Configures the operation from a {@link BaseProject}.
      * <p>
      * Sets the {@link #sourceSet sourceSet}, {@link SourceSet#jdkVersion jdkVersion}, {@link #moduleName moduleName}
@@ -293,6 +281,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param project the project to configure the operation from
      */
     @Override
+    @SuppressFBWarnings("EI_EXPOSE_REP2")
     public DokkaOperation fromProject(BaseProject project) {
         project_ = project;
         sourceSet_ = new SourceSet()
@@ -303,6 +292,19 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
             sourceSet_ = sourceSet_.jdkVersion(project.javaRelease());
         }
         moduleName_ = project.name();
+        return this;
+    }
+
+    /**
+     * Sets the delay substitution of some elements.
+     * <p>
+     * Used in incremental builds of multimodule projects.
+     *
+     * @param delayTemplateSubstitution the delay
+     * @return this operation instance
+     */
+    public DokkaOperation delayTemplateSubstitution(Boolean delayTemplateSubstitution) {
+        delayTemplateSubstitution_ = delayTemplateSubstitution;
         return this;
     }
 
@@ -327,6 +329,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @return the documentation links
      */
+    @SuppressFBWarnings("EI_EXPOSE_REP")
     public Map<String, String> globalLinks() {
         return globalLinks_;
     }
@@ -377,15 +380,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
-     * Retrieves the global package configurations.
-     *
-     * @return the package configurations
-     */
-    public Collection<String> globalPackageOptions() {
-        return globalPackageOptions_;
-    }
-
-    /**
      * Sets the global package configurations.
      * <p>
      * Using format:
@@ -408,6 +402,16 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
+     * Retrieves the global package configurations.
+     *
+     * @return the package configurations
+     */
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public Collection<String> globalPackageOptions() {
+        return globalPackageOptions_;
+    }
+
+    /**
      * Sets the global mapping between a source directory and a Web service for browsing the code.
      *
      * @param links one or more links mapping
@@ -415,15 +419,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      */
     public DokkaOperation globalSrcLink(String... links) {
         return globalSrcLink(List.of(links));
-    }
-
-    /**
-     * Retrieves the global source links
-     *
-     * @return the source links
-     */
-    public Collection<String> globalSrcLink() {
-        return globalSrcLinks_;
     }
 
     /**
@@ -438,11 +433,21 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
+     * Retrieves the global source links
+     *
+     * @return the source links
+     */
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public Collection<String> globalSrcLink() {
+        return globalSrcLinks_;
+    }
+
+    /**
      * Sets the Markdown files that contain module and package documentation.
      * <p>
      * The contents of specified files are parsed and embedded into documentation as module and package descriptions.
      * <p>
-     * This can be configured on per-package basis.
+     * This can be configured on a per-package basis.
      *
      * @param files one or more files
      * @return this operation instance
@@ -457,7 +462,23 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * <p>
      * The contents of specified files are parsed and embedded into documentation as module and package descriptions.
      * <p>
-     * This can be configured on per-package basis.
+     * This can be configured on a per-package basis.
+     *
+     * @param files the Markdown files
+     * @return this operation instance
+     * @see #includes(File...)
+     */
+    public DokkaOperation includes(Collection<File> files) {
+        includes_.addAll(files);
+        return this;
+    }
+
+    /**
+     * Sets the Markdown files that contain module and package documentation.
+     * <p>
+     * The contents of specified files are parsed and embedded into documentation as module and package descriptions.
+     * <p>
+     * This can be configured on a per-package basis.
      *
      * @param files one or more files
      * @return this operation instance
@@ -472,7 +493,22 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * <p>
      * The contents of specified files are parsed and embedded into documentation as module and package descriptions.
      * <p>
-     * This can be configured on per-package basis.
+     * This can be configured on a per-package basis.
+     *
+     * @param files the Markdown files
+     * @return this operation instance
+     * @see #includes(String...)
+     */
+    public DokkaOperation includesStrings(Collection<String> files) {
+        return includes(files.stream().map(File::new).toList());
+    }
+
+    /**
+     * Sets the Markdown files that contain module and package documentation.
+     * <p>
+     * The contents of specified files are parsed and embedded into documentation as module and package descriptions.
+     * <p>
+     * This can be configured on a per-package basis.
      *
      * @param files one or more files
      * @return this operation instance
@@ -482,40 +518,14 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         return includesPaths(List.of(files));
     }
 
-
-    /**
-     * Retrieves the markdown files that contain the module and package documentation.
-     *
-     * @return the markdown files
-     */
-    public Collection<File> includes() {
-        return includes_;
-    }
-
     /**
      * Sets the Markdown files that contain module and package documentation.
      * <p>
      * The contents of specified files are parsed and embedded into documentation as module and package descriptions.
      * <p>
-     * This can be configured on per-package basis.
+     * This can be configured on a per-package basis.
      *
-     * @param files the markdown files
-     * @return this operation instance
-     * @see #includes(File...)
-     */
-    public DokkaOperation includes(Collection<File> files) {
-        includes_.addAll(files);
-        return this;
-    }
-
-    /**
-     * Sets the Markdown files that contain module and package documentation.
-     * <p>
-     * The contents of specified files are parsed and embedded into documentation as module and package descriptions.
-     * <p>
-     * This can be configured on per-package basis.
-     *
-     * @param files the markdown files
+     * @param files the Markdown files
      * @return this operation instance
      * @see #includes(Path...)
      */
@@ -524,18 +534,22 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
-     * Sets the Markdown files that contain module and package documentation.
-     * <p>
-     * The contents of specified files are parsed and embedded into documentation as module and package descriptions.
-     * <p>
-     * This can be configured on per-package basis.
+     * Retrieves the Markdown files that contain the module and package documentation.
      *
-     * @param files the markdown files
-     * @return this operation instance
-     * @see #includes(String...)
+     * @return the Markdown files
      */
-    public DokkaOperation includesStrings(Collection<String> files) {
-        return includes(files.stream().map(File::new).toList());
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public Collection<File> includes() {
+        return includes_;
+    }
+
+    /**
+     * JSON configuration file path.
+     *
+     * @param configuration the configuration file path
+     */
+    public DokkaOperation json(Path configuration) {
+        return json(configuration.toFile());
     }
 
     /**
@@ -546,15 +560,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     public DokkaOperation json(File configuration) {
         json_ = configuration;
         return this;
-    }
-
-    /**
-     * JSON configuration file path.
-     *
-     * @param configuration the configuration file path
-     */
-    public DokkaOperation json(Path configuration) {
-        return json(configuration.toFile());
     }
 
     /**
@@ -571,6 +576,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param configuration the configuration file path
      */
+    @SuppressFBWarnings("PATH_TRAVERSAL_IN")
     public DokkaOperation json(String configuration) {
         return json(new File(configuration));
     }
@@ -653,19 +659,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
-     * Sets the output directory path, {@code ./dokka} by default.
-     * <p>
-     * The directory to where documentation is generated, regardless of output format.
-     *
-     * @param outputDir the output directory
-     * @return this operation instance
-     */
-    public DokkaOperation outputDir(File outputDir) {
-        outputDir_ = outputDir;
-        return this;
-    }
-
-    /**
      * Retrieves the output directory path.
      *
      * @return the output directory
@@ -682,8 +675,22 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param outputDir the output directory
      * @return this operation instance
      */
+    @SuppressFBWarnings("PATH_TRAVERSAL_IN")
     public DokkaOperation outputDir(String outputDir) {
         return outputDir(new File(outputDir));
+    }
+
+    /**
+     * Sets the output directory path, {@code ./dokka} by default.
+     * <p>
+     * The directory to where documentation is generated, regardless of output format.
+     *
+     * @param outputDir the output directory
+     * @return this operation instance
+     */
+    public DokkaOperation outputDir(File outputDir) {
+        outputDir_ = outputDir;
+        return this;
     }
 
     /**
@@ -706,18 +713,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      */
     public DokkaOperation outputFormat(OutputFormat format) {
         pluginsClasspath_.clear();
-        if (format.equals(OutputFormat.JAVADOC)) {
-            pluginsClasspath_.addAll(getJarList(project_.libBldDirectory(),
-                    JAVADOC_PLUGIN_REGEXP));
-        } else if (format.equals(OutputFormat.HTML)) {
-            pluginsClasspath_.addAll(getJarList(project_.libBldDirectory(),
-                    HTML_PLUGIN_REGEXP));
-        } else if (format.equals(OutputFormat.MARKDOWN)) {
-            pluginsClasspath_.addAll(getJarList(project_.libBldDirectory(),
-                    GFM_PLUGIN_REGEXP));
-        } else if (format.equals(OutputFormat.JEKYLL)) {
-            pluginsClasspath_.addAll(getJarList(project_.libBldDirectory(),
-                    JEKYLL_PLUGIN_REGEXP));
+        switch (format) {
+            case JAVADOC -> pluginsClasspath_.addAll(getJarList(project_.libBldDirectory(), JAVADOC_PLUGIN_REGEXP));
+            case HTML -> pluginsClasspath_.addAll(getJarList(project_.libBldDirectory(), HTML_PLUGIN_REGEXP));
+            case MARKDOWN -> pluginsClasspath_.addAll(getJarList(project_.libBldDirectory(), GFM_PLUGIN_REGEXP));
+            case JEKYLL -> pluginsClasspath_.addAll(getJarList(project_.libBldDirectory(), JEKYLL_PLUGIN_REGEXP));
+            default -> throw new IllegalStateException("Unexpected format: " + format);
         }
         return this;
     }
@@ -725,7 +726,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     /**
      * Sets the configuration for Dokka plugins.
      *
-     * @param name              The fully-qualified plugin name
+     * @param name              The fully qualified plugin name
      * @param jsonConfiguration The plugin JSON configuration
      * @return this operation instance
      */
@@ -751,6 +752,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @return the plugin configurations.
      */
+    @SuppressFBWarnings("EI_EXPOSE_REP")
     public Map<String, String> pluginConfigurations() {
         return pluginsConfiguration_;
     }
@@ -769,12 +771,35 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     /**
      * Sets the jars for Dokka plugins and their dependencies.
      *
+     * @param jars the jars
+     * @return this operation instance
+     * @see #pluginsClasspath(Collection)
+     */
+    public DokkaOperation pluginsClasspath(Collection<File> jars) {
+        pluginsClasspath_.addAll(jars);
+        return this;
+    }
+
+    /**
+     * Sets the jars for Dokka plugins and their dependencies.
+     *
      * @param jars one or more jars
      * @return this operation instance
      * @see #pluginsClasspathStrings(Collection)
      */
     public DokkaOperation pluginsClasspath(String... jars) {
         return pluginsClasspathStrings(List.of(jars));
+    }
+
+    /**
+     * Sets the jars for Dokka plugins and their dependencies.
+     *
+     * @param jars the jars
+     * @return this operation instance
+     * @see #pluginsClasspath(String...)
+     */
+    public DokkaOperation pluginsClasspathStrings(Collection<String> jars) {
+        return pluginsClasspath(jars.stream().map(File::new).toList());
     }
 
     /**
@@ -789,27 +814,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
-     * Retrieves the plugins classpath.
-     *
-     * @return the classpath
-     */
-    public Collection<File> pluginsClasspath() {
-        return pluginsClasspath_;
-    }
-
-    /**
-     * Sets the jars for Dokka plugins and their dependencies.
-     *
-     * @param jars the jars
-     * @return this operation instance
-     * @see #pluginsClasspath(Collection)
-     */
-    public DokkaOperation pluginsClasspath(Collection<File> jars) {
-        pluginsClasspath_.addAll(jars);
-        return this;
-    }
-
-    /**
      * Sets the jars for Dokka plugins and their dependencies.
      *
      * @param jars the jars
@@ -821,14 +825,13 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
-     * Sets the jars for Dokka plugins and their dependencies.
+     * Retrieves the plugins classpath.
      *
-     * @param jars the jars
-     * @return this operation instance
-     * @see #pluginsClasspath(String...)
+     * @return the classpath
      */
-    public DokkaOperation pluginsClasspathStrings(Collection<String> jars) {
-        return pluginsClasspath(jars.stream().map(File::new).toList());
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public Collection<File> pluginsClasspath() {
+        return pluginsClasspath_;
     }
 
     /**
