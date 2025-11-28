@@ -56,10 +56,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
             "^.*(dokka-base|analysis-kotlin-descriptors|jekyll-plugin|gfm-plugin|freemarker).*\\.jar$";
     private final Logger LOGGER = Logger.getLogger(DokkaOperation.class.getName());
     private final Map<String, String> globalLinks_ = new ConcurrentHashMap<>();
-    private final Collection<String> globalPackageOptions_ = new ArrayList<>();
-    private final Collection<String> globalSrcLinks_ = new ArrayList<>();
-    private final Collection<File> includes_ = new ArrayList<>();
-    private final Collection<File> pluginsClasspath_ = new ArrayList<>();
+    private final List<String> globalPackageOptions_ = new ArrayList<>();
+    private final List<String> globalSrcLinks_ = new ArrayList<>();
+    private final List<File> includes_ = new ArrayList<>();
+    private final List<File> pluginsClasspath_ = new ArrayList<>();
     private final Map<String, String> pluginsConfiguration_ = new ConcurrentHashMap<>();
     private boolean delayTemplateSubstitution_;
     private boolean failOnWarning_;
@@ -407,7 +407,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return the package configurations
      */
     @SuppressFBWarnings("EI_EXPOSE_REP")
-    public Collection<String> globalPackageOptions() {
+    public List<String> globalPackageOptions() {
         return globalPackageOptions_;
     }
 
@@ -438,7 +438,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return the source links
      */
     @SuppressFBWarnings("EI_EXPOSE_REP")
-    public Collection<String> globalSrcLink() {
+    public List<String> globalSrcLink() {
         return globalSrcLinks_;
     }
 
@@ -539,7 +539,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return the Markdown files
      */
     @SuppressFBWarnings("EI_EXPOSE_REP")
-    public Collection<File> includes() {
+    public List<File> includes() {
         return includes_;
     }
 
@@ -830,7 +830,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return the classpath
      */
     @SuppressFBWarnings("EI_EXPOSE_REP")
-    public Collection<File> pluginsClasspath() {
+    public List<File> pluginsClasspath() {
         return pluginsClasspath_;
     }
 
