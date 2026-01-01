@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,52 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     private BaseProject project_;
     private SourceSet sourceSet_;
     private boolean suppressInheritedMembers_;
+
+    /**
+     * Returns the JARs contained in a given directory.
+     * <p>
+     * Sources and Javadoc JARs are ignored.
+     *
+     * @param directory the directory
+     * @param regex     the regular expression to match
+     * @return the Java Archives
+     */
+    public static List<File> getJarList(File directory, String regex) {
+        var jars = new ArrayList<File>();
+
+        if (directory.isDirectory()) {
+            var files = directory.listFiles();
+            if (files != null) {
+                for (var f : files) {
+                    if (!f.getName().endsWith("-sources.jar") && (!f.getName().endsWith("-javadoc.jar")) &&
+                            f.getName().matches(regex)) {
+                        jars.add(f);
+                    }
+                }
+            }
+        }
+
+        return jars;
+    }
+
+    /**
+     * Determines if the given string is not blank.
+     *
+     * @param s the string
+     * @return {@code true} if not blank, {@code false} otherwise.
+     */
+    public static boolean isNotBlank(String s) {
+        return s != null && !s.isBlank();
+    }
+
+    // Encodes to JSON adding braces as needed
+    private static String encodeJson(final String json) {
+        var sb = new StringBuilder(json);
+        if (!json.startsWith("{") || !json.endsWith("}")) {
+            sb.insert(0, "{").append('}');
+        }
+        return StringUtils.encodeJson(sb.toString());
+    }
 
     @Override
     public void execute() throws IOException, InterruptedException, ExitStatusException {
@@ -224,52 +270,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         }
 
         return args;
-    }
-
-    /**
-     * Returns the JARs contained in a given directory.
-     * <p>
-     * Sources and Javadoc JARs are ignored.
-     *
-     * @param directory the directory
-     * @param regex     the regular expression to match
-     * @return the Java Archives
-     */
-    public static List<File> getJarList(File directory, String regex) {
-        var jars = new ArrayList<File>();
-
-        if (directory.isDirectory()) {
-            var files = directory.listFiles();
-            if (files != null) {
-                for (var f : files) {
-                    if (!f.getName().endsWith("-sources.jar") && (!f.getName().endsWith("-javadoc.jar")) &&
-                            f.getName().matches(regex)) {
-                        jars.add(f);
-                    }
-                }
-            }
-        }
-
-        return jars;
-    }
-
-    /**
-     * Determines if the given string is not blank.
-     *
-     * @param s the string
-     * @return {@code true} if not blank, {@code false} otherwise.
-     */
-    public static boolean isNotBlank(String s) {
-        return s != null && !s.isBlank();
-    }
-
-    // Encodes to JSON adding braces as needed
-    private static String encodeJson(final String json) {
-        var sb = new StringBuilder(json);
-        if (!json.startsWith("{") || !json.endsWith("}")) {
-            sb.insert(0, "{").append('}');
-        }
-        return StringUtils.encodeJson(sb.toString());
     }
 
     /**
