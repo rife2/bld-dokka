@@ -21,6 +21,7 @@ import rife.bld.BaseProject;
 import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
 import rife.bld.extension.dokka.SourceSet;
+import rife.bld.extension.tools.FilesUtils;
 import rife.bld.extension.tools.TextUtils;
 import rife.bld.operations.AbstractProcessOperation;
 import rife.bld.operations.exceptions.ExitStatusException;
@@ -163,7 +164,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
 
             // -outputDir
             if (outputDir_ != null) {
-                if (!outputDir_.exists() && !outputDir_.mkdirs()) {
+                if (!FilesUtils.mkdirs(outputDir_)) {
                     throw new RuntimeException("Could not create: " + outputDir_.getAbsolutePath());
                 }
 
