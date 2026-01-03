@@ -21,6 +21,7 @@ import rife.bld.BaseProject;
 import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
 import rife.bld.extension.dokka.SourceSet;
+import rife.bld.extension.tools.TextUtils;
 import rife.bld.operations.AbstractProcessOperation;
 import rife.bld.operations.exceptions.ExitStatusException;
 import rife.tools.StringUtils;
@@ -99,16 +100,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         }
 
         return jars;
-    }
-
-    /**
-     * Determines if the given string is not blank.
-     *
-     * @param s the string
-     * @return {@code true} if not blank, {@code false} otherwise.
-     */
-    public static boolean isNotBlank(String s) {
-        return s != null && !s.isBlank();
     }
 
     // Encodes to JSON adding braces as needed
@@ -224,13 +215,13 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
             }
 
             // -moduleName
-            if (isNotBlank(moduleName_)) {
+            if (TextUtils.isNotBlank(moduleName_)) {
                 args.add("-moduleName");
                 args.add(moduleName_);
             }
 
             // -moduleVersion
-            if (isNotBlank(moduleVersion_)) {
+            if (TextUtils.isNotBlank(moduleVersion_)) {
                 args.add("-moduleVersion");
                 args.add(moduleVersion_);
             }
