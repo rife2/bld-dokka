@@ -21,13 +21,17 @@ For more information, please refer to the [extensions](https://github.com/rife2/
 To generate a project's documentation in various formats:
 
 ```java
+import rife.bld.extensions.tools.IOUtils;
+
+...
+
 @BuildCommand(value = "dokka-gfm", summary = "Generates documentation in GitHub flavored markdown format")
 public void dokkaGfm() throws ExitStatusException, IOException, InterruptedException {
     new DokkaOperation()
             .fromProject(this)
             .loggingLevel(LoggingLevel.INFO)
             // Create build/dokka/gfm 
-            .outputDir(Path.of(buildDirectory().getAbsolutePath(), "dokka", "gfm").toFile())
+            .outputDir(IOUtils.resolveFile(buildDirectory(), "dokka", "gfm"))
             .outputFormat(OutputFormat.MARKDOWN)
             .execute();
 }
@@ -38,7 +42,7 @@ public void dokkaHtml() throws ExitStatusException, IOException, InterruptedExce
             .fromProject(this)
             .loggingLevel(LoggingLevel.INFO)
             // Create build/dokka/html
-            .outputDir(Path.of(buildDirectory().getAbsolutePath(), "dokka", "html").toFile())
+            .outputDir(IOUtils.resolveFile(buildDirectory(), "dokka", "html"))
             .outputFormat(OutputFormat.HTML)
             .execute();
 }
@@ -49,7 +53,7 @@ public void dokkaJekyll() throws ExitStatusException, IOException, InterruptedEx
             .fromProject(this)
             .loggingLevel(LoggingLevel.INFO)
             // Create build/dokka/jekyll
-            .outputDir(Path.of(buildDirectory().getAbsolutePath(), "dokka", "jekkyl").toFile())
+            .outputDir(IOUtils.resolveFile(buildDirectory(), "dokka", "jekkyl"))
             .outputFormat(OutputFormat.JEKYLL)
             .execute();
 }

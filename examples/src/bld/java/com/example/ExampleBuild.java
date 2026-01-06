@@ -6,6 +6,7 @@ import rife.bld.extension.CompileKotlinOperation;
 import rife.bld.extension.DokkaOperation;
 import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
+import rife.bld.extension.tools.IOUtils;
 import rife.bld.operations.exceptions.ExitStatusException;
 
 import java.io.File;
@@ -21,6 +22,7 @@ import static rife.bld.dependencies.Scope.compile;
 import static rife.bld.dependencies.Scope.test;
 
 public class ExampleBuild extends Project {
+
     public ExampleBuild() {
         pkg = "com.example";
         name = "Example";
@@ -83,7 +85,7 @@ public class ExampleBuild extends Project {
                 .fromProject(this)
                 .loggingLevel(LoggingLevel.INFO)
                 // Create build/dokka/gfm
-                .outputDir(Path.of(buildDirectory().getAbsolutePath(), "dokka", "gfm").toFile())
+                .outputDir(IOUtils.resolveFile(buildDirectory(), "dokka", "gfm"))
                 .outputFormat(OutputFormat.MARKDOWN)
                 .execute();
     }
@@ -94,7 +96,7 @@ public class ExampleBuild extends Project {
                 .fromProject(this)
                 .loggingLevel(LoggingLevel.INFO)
                 // Create build/dokka/html
-                .outputDir(Path.of(buildDirectory().getAbsolutePath(), "dokka", "html").toFile())
+                .outputDir(IOUtils.resolveFile(buildDirectory(), "dokka", "html"))
                 .outputFormat(OutputFormat.HTML)
                 .execute();
     }
@@ -105,7 +107,7 @@ public class ExampleBuild extends Project {
                 .fromProject(this)
                 .loggingLevel(LoggingLevel.INFO)
                 // Create build/dokka/jekyll
-                .outputDir(Path.of(buildDirectory().getAbsolutePath(), "dokka", "jekkyl").toFile())
+                .outputDir(IOUtils.resolveFile(buildDirectory(), "dokka", "jekkyl"))
                 .outputFormat(OutputFormat.JEKYLL)
                 .execute();
     }
