@@ -18,6 +18,9 @@ package rife.bld.extension.dokka;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import rife.bld.extension.DokkaOperation;
+import rife.bld.extension.tools.CollectionUtils;
+import rife.bld.extension.tools.ObjectsUtils;
+import rife.bld.extension.tools.TextUtils;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -245,7 +248,10 @@ public class SourceSet {
      * @see #classpath(Collection)
      */
     public SourceSet classpath(File... files) {
-        return classpath(List.of(files));
+        if (ObjectsUtils.isNotEmpty(files)) {
+            return classpath(List.of(files));
+        }
+        return this;
     }
 
     /**
@@ -260,7 +266,9 @@ public class SourceSet {
      * @see #classpath(File...)
      */
     public SourceSet classpath(Collection<File> files) {
-        classpath_.addAll(files);
+        if (CollectionUtils.isNotEmpty(files)) {
+            classpath_.addAll(files);
+        }
         return this;
     }
 
@@ -276,7 +284,10 @@ public class SourceSet {
      * @see #classpathStrings(Collection)
      */
     public SourceSet classpath(String... files) {
-        return classpathStrings(List.of(files));
+        if (ObjectsUtils.isNotEmpty(files)) {
+            return classpathStrings(List.of(files));
+        }
+        return this;
     }
 
     /**
@@ -291,7 +302,10 @@ public class SourceSet {
      * @see #classpathPaths(Collection)
      */
     public SourceSet classpath(Path... files) {
-        return classpathPaths(List.of(files));
+        if (ObjectsUtils.isNotEmpty(files)) {
+            return classpathPaths(List.of(files));
+        }
+        return this;
     }
 
     /**
@@ -316,7 +330,10 @@ public class SourceSet {
      * @see #classpath(Path...)
      */
     public SourceSet classpathPaths(Collection<Path> files) {
-        return classpath(files.stream().map(Path::toFile).toList());
+        if (CollectionUtils.isNotEmpty(files)) {
+            return classpath(files.stream().map(Path::toFile).toList());
+        }
+        return this;
     }
 
     /**
@@ -331,7 +348,10 @@ public class SourceSet {
      * @see #classpath(String...)
      */
     public SourceSet classpathStrings(Collection<String> files) {
-        return classpath(files.stream().map(File::new).toList());
+        if (CollectionUtils.isNotEmpty(files)) {
+            return classpath(files.stream().map(File::new).toList());
+        }
+        return this;
     }
 
     /**
@@ -342,7 +362,9 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet dependentSourceSets(String moduleName, String sourceSetName) {
-        dependentSourceSets_.put(moduleName, sourceSetName);
+        if (TextUtils.isNotBlank(moduleName, sourceSetName)) {
+            dependentSourceSets_.put(moduleName, sourceSetName);
+        }
         return this;
     }
 
@@ -364,7 +386,9 @@ public class SourceSet {
      * @see #dependentSourceSets(String, String)
      */
     public SourceSet dependentSourceSets(Map<String, String> dependentSourceSets) {
-        dependentSourceSets_.putAll(dependentSourceSets);
+        if (ObjectsUtils.isNotEmpty(dependentSourceSets)) {
+            dependentSourceSets_.putAll(dependentSourceSets);
+        }
         return this;
     }
 
@@ -396,7 +420,9 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet documentedVisibilities(DocumentedVisibility... visibilities) {
-        documentedVisibilities_.addAll(List.of(visibilities));
+        if (ObjectsUtils.isNotEmpty(visibilities)) {
+            documentedVisibilities_.addAll(List.of(visibilities));
+        }
         return this;
     }
 
@@ -420,7 +446,9 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet externalDocumentationLinks(String url, String packageListUrl) {
-        externalDocumentationLinks_.put(url, packageListUrl);
+        if (TextUtils.isNotBlank(url, packageListUrl)) {
+            externalDocumentationLinks_.put(url, packageListUrl);
+        }
         return this;
     }
 
@@ -444,7 +472,9 @@ public class SourceSet {
      * @see #externalDocumentationLinks(String, String)
      */
     public SourceSet externalDocumentationLinks(Map<String, String> externalDocumentationLinks) {
-        externalDocumentationLinks_.putAll(externalDocumentationLinks);
+        if (ObjectsUtils.isNotEmpty(externalDocumentationLinks)) {
+            externalDocumentationLinks_.putAll(externalDocumentationLinks);
+        }
         return this;
     }
 
@@ -461,7 +491,10 @@ public class SourceSet {
      * @see #includes(Collection)
      */
     public SourceSet includes(File... files) {
-        return includes(List.of(files));
+        if (ObjectsUtils.isNotEmpty(files)) {
+            return includes(List.of(files));
+        }
+        return this;
     }
 
     /**
@@ -477,7 +510,9 @@ public class SourceSet {
      * @see #includes(File...)
      */
     public SourceSet includes(Collection<File> files) {
-        includes_.addAll(files);
+        if (CollectionUtils.isNotEmpty(files)) {
+            includes_.addAll(files);
+        }
         return this;
     }
 
@@ -494,7 +529,10 @@ public class SourceSet {
      * @see #classpathStrings(Collection)
      */
     public SourceSet includes(String... files) {
-        return includesStrings(List.of(files));
+        if (ObjectsUtils.isNotEmpty(files)) {
+            return includesStrings(List.of(files));
+        }
+        return this;
     }
 
     /**
@@ -510,7 +548,10 @@ public class SourceSet {
      * @see #classpathPaths(Collection)
      */
     public SourceSet includes(Path... files) {
-        return includesPaths(List.of(files));
+        if (ObjectsUtils.isNotEmpty(files)) {
+            return includesPaths(List.of(files));
+        }
+        return this;
     }
 
     /**
@@ -536,7 +577,10 @@ public class SourceSet {
      * @see #includes(Path...)
      */
     public SourceSet includesPaths(Collection<Path> files) {
-        return includes(files.stream().map(Path::toFile).toList());
+        if (CollectionUtils.isNotEmpty(files)) {
+            return includes(files.stream().map(Path::toFile).toList());
+        }
+        return this;
     }
 
     /**
@@ -552,7 +596,10 @@ public class SourceSet {
      * @see #classpath(String...)
      */
     public SourceSet includesStrings(Collection<String> files) {
-        return includes(files.stream().map(File::new).toList());
+        if (CollectionUtils.isNotEmpty(files)) {
+            return includes(files.stream().map(File::new).toList());
+        }
+        return this;
     }
 
     /**
@@ -692,7 +739,10 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet perPackageOptions(String... perPackageOptions) {
-        return perPackageOptions(List.of(perPackageOptions));
+        if (ObjectsUtils.isNotEmpty(perPackageOptions)) {
+            return perPackageOptions(List.of(perPackageOptions));
+        }
+        return this;
     }
 
     /**
@@ -715,7 +765,9 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet perPackageOptions(Collection<String> perPackageOptions) {
-        perPackageOptions_.addAll(perPackageOptions);
+        if (CollectionUtils.isNotEmpty(perPackageOptions)) {
+            perPackageOptions_.addAll(perPackageOptions);
+        }
         return this;
     }
 
@@ -758,7 +810,10 @@ public class SourceSet {
      * @see #samples(Collection)
      */
     public SourceSet samples(File... samples) {
-        return samples(List.of(samples));
+        if (ObjectsUtils.isNotEmpty(samples)) {
+            return samples(List.of(samples));
+        }
+        return this;
     }
 
     /**
@@ -772,7 +827,9 @@ public class SourceSet {
      * @see #samples(File...)
      */
     public SourceSet samples(Collection<File> samples) {
-        samples_.addAll(samples);
+        if (CollectionUtils.isNotEmpty(samples)) {
+            samples_.addAll(samples);
+        }
         return this;
     }
 
@@ -787,7 +844,10 @@ public class SourceSet {
      * @see #samplesStrings(Collection)
      */
     public SourceSet samples(String... samples) {
-        return samplesStrings(List.of(samples));
+        if (ObjectsUtils.isNotEmpty(samples)) {
+            return samplesStrings(List.of(samples));
+        }
+        return this;
     }
 
     /**
@@ -801,7 +861,10 @@ public class SourceSet {
      * @see #samplesPaths(Collection)
      */
     public SourceSet samples(Path... samples) {
-        return samplesPaths(List.of(samples));
+        if (ObjectsUtils.isNotEmpty(samples)) {
+            return samplesPaths(List.of(samples));
+        }
+        return this;
     }
 
     /**
@@ -815,7 +878,10 @@ public class SourceSet {
      * @see #samples(Path...)
      */
     public SourceSet samplesPaths(Collection<Path> samples) {
-        return samples(samples.stream().map(Path::toFile).toList());
+        if (CollectionUtils.isNotEmpty(samples)) {
+            return samples(samples.stream().map(Path::toFile).toList());
+        }
+        return this;
     }
 
     /**
@@ -829,7 +895,10 @@ public class SourceSet {
      * @see #samples(String...)
      */
     public SourceSet samplesStrings(Collection<String> samples) {
-        return samples(samples.stream().map(File::new).toList());
+        if (CollectionUtils.isNotEmpty(samples)) {
+            return samples(samples.stream().map(File::new).toList());
+        }
+        return this;
     }
 
     /**
@@ -869,7 +938,10 @@ public class SourceSet {
      * @see #src(Collection)
      */
     public SourceSet src(File... src) {
-        return src(List.of(src));
+        if (ObjectsUtils.isNotEmpty(src)) {
+            return src(List.of(src));
+        }
+        return this;
     }
 
     /**
@@ -883,7 +955,10 @@ public class SourceSet {
      * @see #src(File...)
      */
     public SourceSet src(Collection<File> src) {
-        src_.addAll(src);
+        if (CollectionUtils.isNotEmpty(src)) {
+            src_.addAll(src);
+        }
+
         return this;
     }
 
@@ -898,7 +973,10 @@ public class SourceSet {
      * @see #srcStrings(Collection)
      */
     public SourceSet src(String... src) {
-        return srcStrings(List.of(src));
+        if (ObjectsUtils.isNotEmpty(src)) {
+            return srcStrings(List.of(src));
+        }
+        return this;
     }
 
     /**
@@ -912,7 +990,10 @@ public class SourceSet {
      * @see #srcPaths(Collection)
      */
     public SourceSet src(Path... src) {
-        return srcPaths(List.of(src));
+        if (ObjectsUtils.isNotEmpty(src)) {
+            return srcPaths(List.of(src));
+        }
+        return this;
     }
 
     /**
@@ -959,7 +1040,10 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet srcLink(Path srcPath, String remotePath, String lineSuffix) {
-        return srcLink(srcPath.toFile().getAbsolutePath(), remotePath, lineSuffix);
+        if (ObjectsUtils.isNotNull(srcPath, remotePath, lineSuffix)) {
+            return srcLink(srcPath.toFile().getAbsolutePath(), remotePath, lineSuffix);
+        }
+        return this;
     }
 
     /**
@@ -983,7 +1067,10 @@ public class SourceSet {
      * @see #src(Path...)
      */
     public SourceSet srcPaths(Collection<Path> src) {
-        return src(src.stream().map(Path::toFile).toList());
+        if (CollectionUtils.isNotEmpty(src)) {
+            return src(src.stream().map(Path::toFile).toList());
+        }
+        return this;
     }
 
     /**
@@ -997,7 +1084,10 @@ public class SourceSet {
      * @see #src(String...)
      */
     public SourceSet srcStrings(Collection<String> src) {
-        return src(src.stream().map(File::new).toList());
+        if (CollectionUtils.isNotEmpty(src)) {
+            return src(src.stream().map(File::new).toList());
+        }
+        return this;
     }
 
     /**
@@ -1020,7 +1110,10 @@ public class SourceSet {
      * @see #suppressedFilesStrings(Collection)
      */
     public SourceSet suppressedFiles(String... suppressedFiles) {
-        return suppressedFilesStrings(List.of(suppressedFiles));
+        if (ObjectsUtils.isNotEmpty(suppressedFiles)) {
+            return suppressedFilesStrings(List.of(suppressedFiles));
+        }
+        return this;
     }
 
     /**
@@ -1033,7 +1126,9 @@ public class SourceSet {
      * @see #suppressedFiles(File...)
      */
     public SourceSet suppressedFiles(Collection<File> suppressedFiles) {
-        suppressedFiles_.addAll(suppressedFiles);
+        if (CollectionUtils.isNotEmpty(suppressedFiles)) {
+            suppressedFiles_.addAll(suppressedFiles);
+        }
         return this;
     }
 
@@ -1047,7 +1142,10 @@ public class SourceSet {
      * @see #suppressedFiles(Collection)
      */
     public SourceSet suppressedFiles(File... suppressedFiles) {
-        return suppressedFiles(List.of(suppressedFiles));
+        if (ObjectsUtils.isNotEmpty(suppressedFiles)) {
+            return suppressedFiles(List.of(suppressedFiles));
+        }
+        return this;
     }
 
     /**
@@ -1060,7 +1158,10 @@ public class SourceSet {
      * @see #suppressedFilesPaths(Collection)
      */
     public SourceSet suppressedFiles(Path... suppressedFiles) {
-        return suppressedFilesPaths(List.of(suppressedFiles));
+        if (ObjectsUtils.isNotEmpty(suppressedFiles)) {
+            return suppressedFilesPaths(List.of(suppressedFiles));
+        }
+        return this;
     }
 
     /**
@@ -1073,7 +1174,10 @@ public class SourceSet {
      * @see #suppressedFiles(Path...)
      */
     public SourceSet suppressedFilesPaths(Collection<Path> suppressedFiles) {
-        return suppressedFiles(suppressedFiles.stream().map(Path::toFile).toList());
+        if (CollectionUtils.isNotEmpty(suppressedFiles)) {
+            return suppressedFiles(suppressedFiles.stream().map(Path::toFile).toList());
+        }
+        return this;
     }
 
     /**
@@ -1086,6 +1190,9 @@ public class SourceSet {
      * @see #suppressedFiles(String...)
      */
     public SourceSet suppressedFilesStrings(Collection<String> suppressedFiles) {
-        return suppressedFiles(suppressedFiles.stream().map(File::new).toList());
+        if (CollectionUtils.isNotEmpty(suppressedFiles)) {
+            return suppressedFiles(suppressedFiles.stream().map(File::new).toList());
+        }
+        return this;
     }
 }

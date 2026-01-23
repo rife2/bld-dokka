@@ -21,7 +21,9 @@ import rife.bld.BaseProject;
 import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
 import rife.bld.extension.dokka.SourceSet;
+import rife.bld.extension.tools.CollectionUtils;
 import rife.bld.extension.tools.IOUtils;
+import rife.bld.extension.tools.ObjectsUtils;
 import rife.bld.extension.tools.TextUtils;
 import rife.bld.operations.AbstractProcessOperation;
 import rife.bld.operations.exceptions.ExitStatusException;
@@ -347,7 +349,9 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @see #globalSrcLink(String...) #globalSrcLink(String...)#globalSrcLink(String...)
      */
     public DokkaOperation globalLinks(Map<String, String> globalLinks) {
-        globalLinks_.putAll(globalLinks);
+        if (ObjectsUtils.isNotEmpty(globalLinks)) {
+            globalLinks_.putAll(globalLinks);
+        }
         return this;
     }
 
@@ -369,7 +373,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      */
     public DokkaOperation globalPackageOptions(String... options) {
-        return globalPackageOptions(List.of(options));
+        if (ObjectsUtils.isNotEmpty(options)) {
+            return globalPackageOptions(List.of(options));
+        }
+        return this;
     }
 
     /**
@@ -390,7 +397,9 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      */
     public DokkaOperation globalPackageOptions(Collection<String> options) {
-        globalPackageOptions_.addAll(options);
+        if (CollectionUtils.isNotEmpty(options)) {
+            globalPackageOptions_.addAll(options);
+        }
         return this;
     }
 
@@ -411,7 +420,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      */
     public DokkaOperation globalSrcLink(String... links) {
-        return globalSrcLink(List.of(links));
+        if (ObjectsUtils.isNotEmpty(links)) {
+            return globalSrcLink(List.of(links));
+        }
+        return this;
     }
 
     /**
@@ -421,7 +433,9 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      */
     public DokkaOperation globalSrcLink(Collection<String> links) {
-        globalSrcLinks_.addAll(links);
+        if (CollectionUtils.isNotEmpty(links)) {
+            globalSrcLinks_.addAll(links);
+        }
         return this;
     }
 
@@ -447,7 +461,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @see #includes(Collection)
      */
     public DokkaOperation includes(File... files) {
-        return includes(List.of(files));
+        if (ObjectsUtils.isNotEmpty(files)) {
+            return includes(List.of(files));
+        }
+        return this;
     }
 
     /**
@@ -462,7 +479,9 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @see #includes(File...)
      */
     public DokkaOperation includes(Collection<File> files) {
-        includes_.addAll(files);
+        if (CollectionUtils.isNotEmpty(files)) {
+            includes_.addAll(files);
+        }
         return this;
     }
 
@@ -478,7 +497,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @see #includesStrings(Collection)
      */
     public DokkaOperation includes(String... files) {
-        return includesStrings(List.of(files));
+        if (ObjectsUtils.isNotEmpty(files)) {
+            return includesStrings(List.of(files));
+        }
+        return this;
     }
 
     /**
@@ -493,7 +515,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @see #includesPaths(Collection)
      */
     public DokkaOperation includes(Path... files) {
-        return includesPaths(List.of(files));
+        if (ObjectsUtils.isNotEmpty(files)) {
+            return includesPaths(List.of(files));
+        }
+        return this;
     }
 
     /**
@@ -518,7 +543,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @see #includes(Path...)
      */
     public DokkaOperation includesPaths(Collection<Path> files) {
-        return includes(files.stream().map(Path::toFile).toList());
+        if (CollectionUtils.isNotEmpty(files)) {
+            return includes(files.stream().map(Path::toFile).toList());
+        }
+        return this;
     }
 
     /**
@@ -533,7 +561,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @see #includes(String...)
      */
     public DokkaOperation includesStrings(Collection<String> files) {
-        return includes(files.stream().map(File::new).toList());
+        if (CollectionUtils.isNotEmpty(files)) {
+            return includes(files.stream().map(File::new).toList());
+        }
+        return this;
     }
 
     /**
@@ -724,7 +755,9 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      */
     public DokkaOperation pluginConfigurations(String name, String jsonConfiguration) {
-        pluginsConfiguration_.put(name, jsonConfiguration);
+        if (TextUtils.isNotBlank(name, jsonConfiguration)) {
+            pluginsConfiguration_.put(name, jsonConfiguration);
+        }
         return this;
     }
 
@@ -736,7 +769,9 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @see #pluginConfigurations(String, String)
      */
     public DokkaOperation pluginConfigurations(Map<String, String> pluginConfigurations) {
-        pluginsConfiguration_.putAll(pluginConfigurations);
+        if (ObjectsUtils.isNotEmpty(pluginConfigurations)) {
+            pluginsConfiguration_.putAll(pluginConfigurations);
+        }
         return this;
     }
 
@@ -758,7 +793,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @see #includes(Collection)
      */
     public DokkaOperation pluginsClasspath(File... jars) {
-        return pluginsClasspath(List.of(jars));
+        if (ObjectsUtils.isNotEmpty(jars)) {
+            return pluginsClasspath(List.of(jars));
+        }
+        return this;
     }
 
     /**
@@ -769,7 +807,9 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @see #pluginsClasspath(Collection)
      */
     public DokkaOperation pluginsClasspath(Collection<File> jars) {
-        pluginsClasspath_.addAll(jars);
+        if (CollectionUtils.isNotEmpty(jars)) {
+            pluginsClasspath_.addAll(jars);
+        }
         return this;
     }
 
@@ -781,7 +821,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @see #pluginsClasspathStrings(Collection)
      */
     public DokkaOperation pluginsClasspath(String... jars) {
-        return pluginsClasspathStrings(List.of(jars));
+        if (ObjectsUtils.isNotEmpty(jars)) {
+            return pluginsClasspathStrings(List.of(jars));
+        }
+        return this;
     }
 
     /**
@@ -792,7 +835,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @see #pluginsClasspathPaths(Collection)
      */
     public DokkaOperation pluginsClasspath(Path... jars) {
-        return pluginsClasspathPaths(List.of(jars));
+        if (ObjectsUtils.isNotEmpty(jars)) {
+            return pluginsClasspathPaths(List.of(jars));
+        }
+        return this;
     }
 
     /**
@@ -813,7 +859,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @see #pluginsClasspath(Path...)
      */
     public DokkaOperation pluginsClasspathPaths(Collection<Path> jars) {
-        return pluginsClasspath(jars.stream().map(Path::toFile).toList());
+        if (CollectionUtils.isNotEmpty(jars)) {
+            return pluginsClasspath(jars.stream().map(Path::toFile).toList());
+        }
+        return this;
     }
 
     /**
@@ -824,7 +873,11 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @see #pluginsClasspath(String...)
      */
     public DokkaOperation pluginsClasspathStrings(Collection<String> jars) {
-        return pluginsClasspath(jars.stream().map(File::new).toList());
+        if (CollectionUtils.isNotEmpty(jars)) {
+            return pluginsClasspath(jars.stream().map(File::new).toList());
+        }
+        return this;
+
     }
 
     /**
