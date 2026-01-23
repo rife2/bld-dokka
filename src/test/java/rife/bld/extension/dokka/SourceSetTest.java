@@ -36,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static rife.bld.extension.TestUtils.localPath;
 
 class SourceSetTest {
+
     private static final String CLASSPATH_1 = "classpath1";
     private static final String CLASSPATH_2 = "classpath2";
     private static final String INCLUDES_1 = "includes1";
@@ -203,6 +204,7 @@ class SourceSetTest {
     @Nested
     @DisplayName("Classpath Tests")
     class ClasspathTests {
+
         @Test
         void classpathAsFileArray() {
             var args = new SourceSet();
@@ -249,6 +251,7 @@ class SourceSetTest {
     @Nested
     @DisplayName("Includes Tests")
     class IncludesTests {
+
         @Test
         void includesAsFileArray() {
             var args = new SourceSet();
@@ -295,6 +298,7 @@ class SourceSetTest {
     @Nested
     @DisplayName("Samples Tests")
     class SamplesTests {
+
         @Test
         void samplesAsFileArray() {
             var args = new SourceSet();
@@ -341,6 +345,7 @@ class SourceSetTest {
     @Nested
     @DisplayName("Source Tests")
     class SrcTests {
+
         private static final String main = "src/main";
         private static final String src = "src";
         private static final String test = "src/test";
@@ -393,6 +398,7 @@ class SourceSetTest {
     @Nested
     @DisplayName("Suppressed Files Tests")
     class SuppressedFilesTests {
+
         @Test
         void suppressedFilesAsFileArray() {
             var args = new SourceSet();

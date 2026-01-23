@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
  */
 @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
+
     public static final String SEMICOLON = ";";
     private static final String GFM_PLUGIN_REGEXP =
             "^.*(dokka-base|analysis-kotlin-descriptors|gfm-plugin|freemarker).*\\.jar$";
@@ -75,42 +76,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     private BaseProject project_;
     private SourceSet sourceSet_;
     private boolean suppressInheritedMembers_;
-
-    /**
-     * Returns the JARs contained in a given directory.
-     * <p>
-     * Sources and Javadoc JARs are ignored.
-     *
-     * @param directory the directory
-     * @param regex     the regular expression to match
-     * @return the Java Archives
-     */
-    public static List<File> getJarList(File directory, String regex) {
-        var jars = new ArrayList<File>();
-
-        if (directory.isDirectory()) {
-            var files = directory.listFiles();
-            if (files != null) {
-                for (var f : files) {
-                    if (!f.getName().endsWith("-sources.jar") && (!f.getName().endsWith("-javadoc.jar")) &&
-                            f.getName().matches(regex)) {
-                        jars.add(f);
-                    }
-                }
-            }
-        }
-
-        return jars;
-    }
-
-    // Encodes to JSON adding braces as needed
-    private static String encodeJson(final String json) {
-        var sb = new StringBuilder(json);
-        if (!json.startsWith("{") || !json.endsWith("}")) {
-            sb.insert(0, "{").append('}');
-        }
-        return StringUtils.encodeJson(sb.toString());
-    }
 
     @Override
     public void execute() throws IOException, InterruptedException, ExitStatusException {
@@ -285,6 +250,42 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         }
         moduleName_ = project.name();
         return this;
+    }
+
+    // Encodes to JSON adding braces as needed
+    private static String encodeJson(final String json) {
+        var sb = new StringBuilder(json);
+        if (!json.startsWith("{") || !json.endsWith("}")) {
+            sb.insert(0, "{").append('}');
+        }
+        return StringUtils.encodeJson(sb.toString());
+    }
+
+    /**
+     * Returns the JARs contained in a given directory.
+     * <p>
+     * Sources and Javadoc JARs are ignored.
+     *
+     * @param directory the directory
+     * @param regex     the regular expression to match
+     * @return the Java Archives
+     */
+    public static List<File> getJarList(File directory, String regex) {
+        var jars = new ArrayList<File>();
+
+        if (directory.isDirectory()) {
+            var files = directory.listFiles();
+            if (files != null) {
+                for (var f : files) {
+                    if (!f.getName().endsWith("-sources.jar") && (!f.getName().endsWith("-javadoc.jar")) &&
+                            f.getName().matches(regex)) {
+                        jars.add(f);
+                    }
+                }
+            }
+        }
+
+        return jars;
     }
 
     /**
@@ -487,27 +488,22 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * <p>
      * This can be configured on a per-package basis.
      *
-     * @param files the Markdown files
-     * @return this operation instance
-     * @see #includes(String...)
-     */
-    public DokkaOperation includesStrings(Collection<String> files) {
-        return includes(files.stream().map(File::new).toList());
-    }
-
-    /**
-     * Sets the Markdown files that contain module and package documentation.
-     * <p>
-     * The contents of specified files are parsed and embedded into documentation as module and package descriptions.
-     * <p>
-     * This can be configured on a per-package basis.
-     *
      * @param files one or more files
      * @return this operation instance
      * @see #includesPaths(Collection)
      */
     public DokkaOperation includes(Path... files) {
         return includesPaths(List.of(files));
+    }
+
+    /**
+     * Retrieves the Markdown files that contain the module and package documentation.
+     *
+     * @return the Markdown files
+     */
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public List<File> includes() {
+        return includes_;
     }
 
     /**
@@ -526,13 +522,18 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
-     * Retrieves the Markdown files that contain the module and package documentation.
+     * Sets the Markdown files that contain module and package documentation.
+     * <p>
+     * The contents of specified files are parsed and embedded into documentation as module and package descriptions.
+     * <p>
+     * This can be configured on a per-package basis.
      *
-     * @return the Markdown files
+     * @param files the Markdown files
+     * @return this operation instance
+     * @see #includes(String...)
      */
-    @SuppressFBWarnings("EI_EXPOSE_REP")
-    public List<File> includes() {
-        return includes_;
+    public DokkaOperation includesStrings(Collection<String> files) {
+        return includes(files.stream().map(File::new).toList());
     }
 
     /**
@@ -786,23 +787,22 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     /**
      * Sets the jars for Dokka plugins and their dependencies.
      *
-     * @param jars the jars
-     * @return this operation instance
-     * @see #pluginsClasspath(String...)
-     */
-    public DokkaOperation pluginsClasspathStrings(Collection<String> jars) {
-        return pluginsClasspath(jars.stream().map(File::new).toList());
-    }
-
-    /**
-     * Sets the jars for Dokka plugins and their dependencies.
-     *
      * @param jars one or more jars
      * @return this operation instance
      * @see #pluginsClasspathPaths(Collection)
      */
     public DokkaOperation pluginsClasspath(Path... jars) {
         return pluginsClasspathPaths(List.of(jars));
+    }
+
+    /**
+     * Retrieves the plugins classpath.
+     *
+     * @return the classpath
+     */
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public List<File> pluginsClasspath() {
+        return pluginsClasspath_;
     }
 
     /**
@@ -817,13 +817,14 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
-     * Retrieves the plugins classpath.
+     * Sets the jars for Dokka plugins and their dependencies.
      *
-     * @return the classpath
+     * @param jars the jars
+     * @return this operation instance
+     * @see #pluginsClasspath(String...)
      */
-    @SuppressFBWarnings("EI_EXPOSE_REP")
-    public List<File> pluginsClasspath() {
-        return pluginsClasspath_;
+    public DokkaOperation pluginsClasspathStrings(Collection<String> jars) {
+        return pluginsClasspath(jars.stream().map(File::new).toList());
     }
 
     /**

@@ -30,6 +30,7 @@ import static rife.bld.dependencies.Scope.*;
 import static rife.bld.operations.JavadocOptions.DocLinkOption.NO_MISSING;
 
 public class DokkaOperationBuild extends Project {
+
     public DokkaOperationBuild() {
         pkg = "rife.bld.extension";
         name = "bld-dokka";
@@ -98,10 +99,6 @@ public class DokkaOperationBuild extends Project {
                 .signPassphrase(property("sign.passphrase"));
     }
 
-    public static void main(String[] args) {
-        new DokkaOperationBuild().start(args);
-    }
-
     @Override
     public void test() throws Exception {
         if (ExecOperation.isLinux()) {
@@ -111,6 +108,10 @@ public class DokkaOperationBuild extends Project {
                     .execute();
         }
         super.test();
+    }
+
+    public static void main(String[] args) {
+        new DokkaOperationBuild().start(args);
     }
 
     @BuildCommand(summary = "Runs PMD analysis")

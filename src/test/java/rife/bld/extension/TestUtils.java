@@ -24,6 +24,7 @@ import static rife.bld.extension.DokkaOperation.SEMICOLON;
 
 @SuppressWarnings("PMD.TestClassWithoutTestCases")
 public final class TestUtils {
+
     private TestUtils() {
         // no-op
     }

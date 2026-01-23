@@ -47,6 +47,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 
 @ExtendWith(LoggingExtension.class)
 class DokkaOperationTest {
+
     private static final File EXAMPLES = new File("examples");
     private static final String FILE_1 = "file1";
     private static final String FILE_2 = "file2";
@@ -69,6 +70,7 @@ class DokkaOperationTest {
     @Nested
     @DisplayName("Execute Tests")
     class ExecuteTests {
+
         @Test
         void execute() {
             var op = new DokkaOperation()
@@ -198,9 +200,11 @@ class DokkaOperationTest {
     @Nested
     @DisplayName("Options Tests")
     class OptionsTests {
+
         @Nested
         @DisplayName("Includes Tests")
         class IncludesTests {
+
             private final DokkaOperation op = new DokkaOperation();
 
             @Test
@@ -249,6 +253,7 @@ class DokkaOperationTest {
         @Nested
         @DisplayName("JSON Tests")
         class JsonTests {
+
             private final DokkaOperation op = new DokkaOperation();
 
             @Test
@@ -274,6 +279,7 @@ class DokkaOperationTest {
         @Nested
         @DisplayName("Output Dir Tests")
         class OutputDirTests {
+
             private final DokkaOperation op = new DokkaOperation();
 
             @Test
@@ -299,6 +305,7 @@ class DokkaOperationTest {
         @Nested
         @DisplayName("Plugin Classpath Tests")
         class PluginClasspathTests {
+
             private final DokkaOperation op = new DokkaOperation();
 
             @Test
