@@ -18,6 +18,7 @@ package rife.bld.extension;
 
 import rife.bld.BuildCommand;
 import rife.bld.Project;
+import rife.bld.extension.tools.IOTools;
 import rife.bld.publish.PublishDeveloper;
 import rife.bld.publish.PublishLicense;
 import rife.bld.publish.PublishScm;
@@ -43,7 +44,7 @@ public class DokkaOperationBuild extends Project {
 
         repositories = List.of(MAVEN_LOCAL, MAVEN_CENTRAL, RIFE2_SNAPSHOTS, RIFE2_RELEASES);
 
-        var dokka = version(2, 1, 0);
+        var dokka = version(2, 2, 0, "Beta");
         var junit = version(6, 0, 2);
         scope(compile)
                 .include(dependency("org.jetbrains.dokka", "dokka-cli", dokka))
@@ -61,7 +62,7 @@ public class DokkaOperationBuild extends Project {
                         version(4, 9, 8)));
         scope(test)
                 .include(dependency("com.uwyn.rife2", "bld-extensions-testing-helpers",
-                        version(0, 9, 5)))
+                        version(0, 9, 6, "SNAPSHOT")))
                 .include(dependency("org.junit.jupiter", "junit-jupiter", junit))
                 .include(dependency("org.junit.platform", "junit-platform-console-standalone", junit))
                 .include(dependency("org.assertj", "assertj-core",
@@ -108,7 +109,10 @@ public class DokkaOperationBuild extends Project {
                     .command("scripts/cliargs.sh")
                     .execute();
         }
-        super.test();
+
+        var op = testOperation().fromProject(this);
+        op.testToolOptions().reportsDir(IOTools.resolveFile(buildDirectory(), "test-results", "test"));
+        op.execute();
     }
 
     public static void main(String[] args) {
