@@ -58,6 +58,7 @@ class DokkaOperationTest {
     @SuppressWarnings({"unused"})
     private static final LoggingExtension LOGGING_EXTENSION = new LoggingExtension(DokkaOperation.class.getName());
 
+    private static final Logger LOGGER = Logger.getLogger(DokkaOperation.class.getName());
     private static final String OPTION_1 = "option1";
     private static final String OPTION_2 = "option2";
     private static final String OPTION_3 = "option3";
@@ -66,6 +67,14 @@ class DokkaOperationTest {
     private static final String PATH_2 = "path2";
     private static final String PATH_3 = "path3";
     private static final String PATH_4 = "path4";
+    private static final TestLogHandler TEST_LOG_HANDLER = new TestLogHandler();
+
+    @RegisterExtension
+    @SuppressWarnings("unused")
+    private static final LoggingExtension LOGGING_EXTENSION = new LoggingExtension(
+            LOGGER,
+            TEST_LOG_HANDLER
+    );
 
     @Nested
     @DisplayName("Execute Tests")
@@ -129,7 +138,7 @@ class DokkaOperationTest {
                 softly.assertThat(op.globalSrcLink()).as("globalSrcLink").hasSize(4);
                 softly.assertThat(op.includes()).as("includes").hasSize(4);
                 softly.assertThat(op.pluginConfigurations()).as("pluginConfigurations").hasSize(3);
-                softly.assertThat(op.pluginsClasspath()).as("pluginsClasspath").hasSize(9);
+                softly.assertThat(op.pluginsClasspath()).as("pluginsClasspath").hasSize(4);
             }
 
             var params = op.executeConstructProcessCommandList();
@@ -191,9 +200,20 @@ class DokkaOperationTest {
         }
 
         @Test
+        void executeNoOutputFormat() {
+            var op = new DokkaOperation()
+                    .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "examples",
+                            "Examples"))
+                    .outputDir("build/javadoc");
+            assertThatThrownBy(op::execute).isInstanceOf(ExitStatusException.class);
+            assertThat(TEST_LOG_HANDLER.containsMessage("An output format must be specified.")).isTrue();
+        }
+
+        @Test
         void executeNoProject() {
             var op = new DokkaOperation();
             assertThatThrownBy(op::execute).isInstanceOf(ExitStatusException.class);
+            assertThat(TEST_LOG_HANDLER.containsMessage("A project must be specified.")).isTrue();
         }
     }
 

@@ -18,6 +18,7 @@ package rife.bld.extension.dokka;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import rife.bld.extension.DokkaOperation;
+import rife.bld.extension.tools.CollectionTools;
 import rife.bld.extension.tools.ObjectTools;
 import rife.bld.extension.tools.TextTools;
 
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
 public class SourceSet {
 
     private static final Logger LOGGER = Logger.getLogger(SourceSet.class.getName());
+    private static final String SEMICOLON = ";";
     private final List<File> classpath_ = new ArrayList<>();
     private final Map<String, String> dependentSourceSets_ = new ConcurrentSkipListMap<>();
     private final List<DocumentedVisibility> documentedVisibilities_ = new ArrayList<>();
@@ -138,7 +140,7 @@ public class SourceSet {
         // -classpath
         if (!classpath_.isEmpty()) {
             args.add("-classpath");
-            args.add(classpath_.stream().map(File::getAbsolutePath).collect(Collectors.joining(DokkaOperation.SEMICOLON)));
+            args.add(classpath_.stream().map(File::getAbsolutePath).collect(Collectors.joining(SEMICOLON)));
         }
 
         // -dependentSourceSets
@@ -146,7 +148,7 @@ public class SourceSet {
             args.add("-dependentSourceSets");
             var deps = new ArrayList<String>();
             dependentSourceSets_.forEach((k, v) -> deps.add(String.format("%s/%s", k, v)));
-            args.add(String.join(DokkaOperation.SEMICOLON, deps));
+            args.add(String.join(SEMICOLON, deps));
         }
 
         // -displayName
@@ -160,7 +162,7 @@ public class SourceSet {
             args.add("-documentedVisibilities");
             var vis = new ArrayList<String>();
             documentedVisibilities_.forEach(d -> vis.add(d.name().toLowerCase()));
-            args.add(String.join(DokkaOperation.SEMICOLON, vis));
+            args.add(String.join(SEMICOLON, vis));
         }
 
         // -externalDocumentationLinks
@@ -180,7 +182,7 @@ public class SourceSet {
         // -includes
         if (!includes_.isEmpty()) {
             args.add("-includes");
-            args.add(includes_.stream().map(File::getAbsolutePath).collect(Collectors.joining(DokkaOperation.SEMICOLON)));
+            args.add(includes_.stream().map(File::getAbsolutePath).collect(Collectors.joining(SEMICOLON)));
         }
 
         // -languageVersion
@@ -212,13 +214,13 @@ public class SourceSet {
         // -perPackageOptions
         if (!perPackageOptions_.isEmpty()) {
             args.add("-perPackageOptions");
-            args.add(String.join(DokkaOperation.SEMICOLON, perPackageOptions_));
+            args.add(String.join(SEMICOLON, perPackageOptions_));
         }
 
         // -samples
         if (!samples_.isEmpty()) {
             args.add("-samples");
-            args.add(samples_.stream().map(File::getAbsolutePath).collect(Collectors.joining(DokkaOperation.SEMICOLON)));
+            args.add(samples_.stream().map(File::getAbsolutePath).collect(Collectors.joining(SEMICOLON)));
         }
 
         // -skipDeprecated
@@ -229,7 +231,7 @@ public class SourceSet {
         // -src
         if (!src_.isEmpty()) {
             args.add("-src");
-            args.add(src_.stream().map(File::getAbsolutePath).collect(Collectors.joining(DokkaOperation.SEMICOLON)));
+            args.add(src_.stream().map(File::getAbsolutePath).collect(Collectors.joining(SEMICOLON)));
         }
 
         // -srcLink
@@ -237,7 +239,7 @@ public class SourceSet {
             args.add("-srcLink");
             var links = new ArrayList<String>();
             srcLinks_.forEach((k, v) -> links.add(String.format("%s=%s", k, v)));
-            args.add(String.join(DokkaOperation.SEMICOLON, links));
+            args.add(String.join(SEMICOLON, links));
         }
 
         // -sourceSetName
@@ -249,7 +251,7 @@ public class SourceSet {
         // -suppressedFiles
         if (!suppressedFiles_.isEmpty()) {
             args.add("-suppressedFiles");
-            args.add(suppressedFiles_.stream().map(File::getAbsolutePath).collect(Collectors.joining(DokkaOperation.SEMICOLON)));
+            args.add(suppressedFiles_.stream().map(File::getAbsolutePath).collect(Collectors.joining(SEMICOLON)));
         }
 
         return args;
@@ -264,12 +266,10 @@ public class SourceSet {
      *
      * @param files one or more file
      * @return this operation instance
-     * @see #classpath(Collection)
+     * @see #classpath(Collection...)
      */
     public SourceSet classpath(File... files) {
-        if (ObjectTools.isNotEmpty(files)) {
-            return classpath(List.of(files));
-        }
+        classpath_.addAll(CollectionTools.combine(files));
         return this;
     }
 
@@ -284,10 +284,9 @@ public class SourceSet {
      * @return this operation instance
      * @see #classpath(File...)
      */
-    public SourceSet classpath(Collection<File> files) {
-        if (ObjectTools.isNotEmpty(files)) {
-            classpath_.addAll(files);
-        }
+    @SafeVarargs
+    public final SourceSet classpath(Collection<File>... files) {
+        classpath_.addAll(CollectionTools.combine(files));
         return this;
     }
 
@@ -300,12 +299,10 @@ public class SourceSet {
      *
      * @param files one or more file
      * @return this operation instance
-     * @see #classpathStrings(Collection)
+     * @see #classpathStrings(Collection...)
      */
     public SourceSet classpath(String... files) {
-        if (ObjectTools.isNotEmpty(files)) {
-            return classpathStrings(List.of(files));
-        }
+        classpath_.addAll(CollectionTools.combineStringsToFiles(files));
         return this;
     }
 
@@ -318,12 +315,10 @@ public class SourceSet {
      *
      * @param files one or more file
      * @return this operation instance
-     * @see #classpathPaths(Collection)
+     * @see #classpathPaths(Collection...)
      */
     public SourceSet classpath(Path... files) {
-        if (ObjectTools.isNotEmpty(files)) {
-            return classpathPaths(List.of(files));
-        }
+        classpath_.addAll(CollectionTools.combinePathsToFiles(files));
         return this;
     }
 
@@ -348,10 +343,9 @@ public class SourceSet {
      * @return this operation instance
      * @see #classpath(Path...)
      */
-    public SourceSet classpathPaths(Collection<Path> files) {
-        if (ObjectTools.isNotEmpty(files)) {
-            return classpath(files.stream().map(Path::toFile).toList());
-        }
+    @SafeVarargs
+    public final SourceSet classpathPaths(Collection<Path>... files) {
+        classpath_.addAll(CollectionTools.combinePathsToFiles(files));
         return this;
     }
 
@@ -366,10 +360,9 @@ public class SourceSet {
      * @return this operation instance
      * @see #classpath(String...)
      */
-    public SourceSet classpathStrings(Collection<String> files) {
-        if (ObjectTools.isNotEmpty(files)) {
-            return classpath(files.stream().map(File::new).toList());
-        }
+    @SafeVarargs
+    public final SourceSet classpathStrings(Collection<String>... files) {
+        classpath_.addAll(CollectionTools.combineStringsToFiles(files));
         return this;
     }
 
@@ -441,9 +434,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet documentedVisibilities(DocumentedVisibility... visibilities) {
-        if (ObjectTools.isNotEmpty(visibilities)) {
-            documentedVisibilities_.addAll(List.of(visibilities));
-        }
+        documentedVisibilities_.addAll(CollectionTools.combine(visibilities));
         return this;
     }
 
@@ -511,12 +502,10 @@ public class SourceSet {
      *
      * @param files one or more files
      * @return this operation instance
-     * @see #includes(Collection)
+     * @see #includes(Collection...)
      */
     public SourceSet includes(File... files) {
-        if (ObjectTools.isNotEmpty(files)) {
-            return includes(List.of(files));
-        }
+        includes_.addAll(CollectionTools.combine(files));
         return this;
     }
 
@@ -532,10 +521,9 @@ public class SourceSet {
      * @return this operation instance
      * @see #includes(File...)
      */
-    public SourceSet includes(Collection<File> files) {
-        if (ObjectTools.isNotEmpty(files)) {
-            includes_.addAll(files);
-        }
+    @SafeVarargs
+    public final SourceSet includes(Collection<File>... files) {
+        includes_.addAll(CollectionTools.combine(files));
         return this;
     }
 
@@ -549,12 +537,10 @@ public class SourceSet {
      *
      * @param files one or more files
      * @return this operation instance
-     * @see #classpathStrings(Collection)
+     * @see #includesStrings(Collection...)
      */
     public SourceSet includes(String... files) {
-        if (ObjectTools.isNotEmpty(files)) {
-            return includesStrings(List.of(files));
-        }
+        includes_.addAll(CollectionTools.combineStringsToFiles(files));
         return this;
     }
 
@@ -568,19 +554,17 @@ public class SourceSet {
      *
      * @param files one or more files
      * @return this operation instance
-     * @see #classpathPaths(Collection)
+     * @see #includesPaths(Collection...)
      */
     public SourceSet includes(Path... files) {
-        if (ObjectTools.isNotEmpty(files)) {
-            return includesPaths(List.of(files));
-        }
+        includes_.addAll(CollectionTools.combinePathsToFiles(files));
         return this;
     }
 
     /**
      * Retrieves the Markdown files that contain module and package documentation.
      *
-     * @return the markdown files
+     * @return the Markdown files
      */
     @SuppressFBWarnings("EI_EXPOSE_REP")
     public List<File> includes() {
@@ -599,10 +583,9 @@ public class SourceSet {
      * @return this operation instance
      * @see #includes(Path...)
      */
-    public SourceSet includesPaths(Collection<Path> files) {
-        if (ObjectTools.isNotEmpty(files)) {
-            return includes(files.stream().map(Path::toFile).toList());
-        }
+    @SafeVarargs
+    public final SourceSet includesPaths(Collection<Path>... files) {
+        includes_.addAll(CollectionTools.combinePathsToFiles(files));
         return this;
     }
 
@@ -616,12 +599,11 @@ public class SourceSet {
      *
      * @param files the collection of files
      * @return this operation instance
-     * @see #classpath(String...)
+     * @see #includes(String...)
      */
-    public SourceSet includesStrings(Collection<String> files) {
-        if (ObjectTools.isNotEmpty(files)) {
-            return includes(files.stream().map(File::new).toList());
-        }
+    @SafeVarargs
+    public final SourceSet includesStrings(Collection<String>... files) {
+        includes_.addAll(CollectionTools.combineStringsToFiles(files));
         return this;
     }
 
@@ -762,9 +744,7 @@ public class SourceSet {
      * @return this operation instance
      */
     public SourceSet perPackageOptions(String... perPackageOptions) {
-        if (ObjectTools.isNotEmpty(perPackageOptions)) {
-            return perPackageOptions(List.of(perPackageOptions));
-        }
+        perPackageOptions_.addAll(CollectionTools.combine(perPackageOptions));
         return this;
     }
 
@@ -787,10 +767,9 @@ public class SourceSet {
      * @param perPackageOptions the per package options
      * @return this operation instance
      */
-    public SourceSet perPackageOptions(Collection<String> perPackageOptions) {
-        if (ObjectTools.isNotEmpty(perPackageOptions)) {
-            perPackageOptions_.addAll(perPackageOptions);
-        }
+    @SafeVarargs
+    public final SourceSet perPackageOptions(Collection<String>... perPackageOptions) {
+        perPackageOptions_.addAll(CollectionTools.combine(perPackageOptions));
         return this;
     }
 
@@ -828,14 +807,12 @@ public class SourceSet {
      * The directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
      * tag.
      *
-     * @param samples nne or more samples
+     * @param samples one or more samples
      * @return this operation instance
-     * @see #samples(Collection)
+     * @see #samples(Collection...)
      */
     public SourceSet samples(File... samples) {
-        if (ObjectTools.isNotEmpty(samples)) {
-            return samples(List.of(samples));
-        }
+        samples_.addAll(CollectionTools.combine(samples));
         return this;
     }
 
@@ -849,10 +826,9 @@ public class SourceSet {
      * @return this operation instance
      * @see #samples(File...)
      */
-    public SourceSet samples(Collection<File> samples) {
-        if (ObjectTools.isNotEmpty(samples)) {
-            samples_.addAll(samples);
-        }
+    @SafeVarargs
+    public final SourceSet samples(Collection<File>... samples) {
+        samples_.addAll(CollectionTools.combine(samples));
         return this;
     }
 
@@ -862,14 +838,12 @@ public class SourceSet {
      * The directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
      * tag.
      *
-     * @param samples nne or more samples
+     * @param samples one or more samples
      * @return this operation instance
-     * @see #samplesStrings(Collection)
+     * @see #samplesStrings(Collection...)
      */
     public SourceSet samples(String... samples) {
-        if (ObjectTools.isNotEmpty(samples)) {
-            return samplesStrings(List.of(samples));
-        }
+        samples_.addAll(CollectionTools.combineStringsToFiles(samples));
         return this;
     }
 
@@ -879,14 +853,12 @@ public class SourceSet {
      * The directories or files that contain sample functions which are referenced via the {@code @sample} KDoc
      * tag.
      *
-     * @param samples nne or more samples
+     * @param samples one or more samples
      * @return this operation instance
-     * @see #samplesPaths(Collection)
+     * @see #samplesPaths(Collection...)
      */
     public SourceSet samples(Path... samples) {
-        if (ObjectTools.isNotEmpty(samples)) {
-            return samplesPaths(List.of(samples));
-        }
+        samples_.addAll(CollectionTools.combinePathsToFiles(samples));
         return this;
     }
 
@@ -900,10 +872,9 @@ public class SourceSet {
      * @return this operation instance
      * @see #samples(Path...)
      */
-    public SourceSet samplesPaths(Collection<Path> samples) {
-        if (ObjectTools.isNotEmpty(samples)) {
-            return samples(samples.stream().map(Path::toFile).toList());
-        }
+    @SafeVarargs
+    public final SourceSet samplesPaths(Collection<Path>... samples) {
+        samples_.addAll(CollectionTools.combinePathsToFiles(samples));
         return this;
     }
 
@@ -917,10 +888,9 @@ public class SourceSet {
      * @return this operation instance
      * @see #samples(String...)
      */
-    public SourceSet samplesStrings(Collection<String> samples) {
-        if (ObjectTools.isNotEmpty(samples)) {
-            return samples(samples.stream().map(File::new).toList());
-        }
+    @SafeVarargs
+    public final SourceSet samplesStrings(Collection<String>... samples) {
+        samples_.addAll(CollectionTools.combineStringsToFiles(samples));
         return this;
     }
 
@@ -956,14 +926,12 @@ public class SourceSet {
      * The source code roots to be analyzed and documented. Acceptable inputs are directories and individual
      * {@code .kt} / {@code .java} files.
      *
-     * @param src pne ore moe source code roots
+     * @param src one or more source code roots
      * @return this operation instance
-     * @see #src(Collection)
+     * @see #src(Collection...)
      */
     public SourceSet src(File... src) {
-        if (ObjectTools.isNotEmpty(src)) {
-            return src(List.of(src));
-        }
+        src_.addAll(CollectionTools.combine(src));
         return this;
     }
 
@@ -977,11 +945,9 @@ public class SourceSet {
      * @return this operation instance
      * @see #src(File...)
      */
-    public SourceSet src(Collection<File> src) {
-        if (ObjectTools.isNotEmpty(src)) {
-            src_.addAll(src);
-        }
-
+    @SafeVarargs
+    public final SourceSet src(Collection<File>... src) {
+        src_.addAll(CollectionTools.combine(src));
         return this;
     }
 
@@ -991,14 +957,12 @@ public class SourceSet {
      * The source code roots to be analyzed and documented. Acceptable inputs are directories and individual
      * {@code .kt} / {@code .java} files.
      *
-     * @param src pne ore moe source code roots
+     * @param src one or more source code roots
      * @return this operation instance
-     * @see #srcStrings(Collection)
+     * @see #srcStrings(Collection...)
      */
     public SourceSet src(String... src) {
-        if (ObjectTools.isNotEmpty(src)) {
-            return srcStrings(List.of(src));
-        }
+        src_.addAll(CollectionTools.combineStringsToFiles(src));
         return this;
     }
 
@@ -1008,14 +972,12 @@ public class SourceSet {
      * The source code roots to be analyzed and documented. Acceptable inputs are directories and individual
      * {@code .kt} / {@code .java} files.
      *
-     * @param src pne ore moe source code roots
+     * @param src 0ne or more source code roots
      * @return this operation instance
-     * @see #srcPaths(Collection)
+     * @see #srcPaths(Collection...)
      */
     public SourceSet src(Path... src) {
-        if (ObjectTools.isNotEmpty(src)) {
-            return srcPaths(List.of(src));
-        }
+        src_.addAll(CollectionTools.combinePathsToFiles(src));
         return this;
     }
 
@@ -1089,10 +1051,9 @@ public class SourceSet {
      * @return this operation instance
      * @see #src(Path...)
      */
-    public SourceSet srcPaths(Collection<Path> src) {
-        if (ObjectTools.isNotEmpty(src)) {
-            return src(src.stream().map(Path::toFile).toList());
-        }
+    @SafeVarargs
+    public final SourceSet srcPaths(Collection<Path>... src) {
+        src_.addAll(CollectionTools.combinePathsToFiles(src));
         return this;
     }
 
@@ -1106,10 +1067,9 @@ public class SourceSet {
      * @return this operation instance
      * @see #src(String...)
      */
-    public SourceSet srcStrings(Collection<String> src) {
-        if (ObjectTools.isNotEmpty(src)) {
-            return src(src.stream().map(File::new).toList());
-        }
+    @SafeVarargs
+    public final SourceSet srcStrings(Collection<String>... src) {
+        src_.addAll(CollectionTools.combineStringsToFiles(src));
         return this;
     }
 
@@ -1128,14 +1088,12 @@ public class SourceSet {
      * <p>
      * The files to be suppressed when generating documentation.
      *
-     * @param suppressedFiles one or moe suppressed files
+     * @param suppressedFiles one or more suppressed files
      * @return this operation instance
-     * @see #suppressedFilesStrings(Collection)
+     * @see #suppressedFilesStrings(Collection...)
      */
     public SourceSet suppressedFiles(String... suppressedFiles) {
-        if (ObjectTools.isNotEmpty(suppressedFiles)) {
-            return suppressedFilesStrings(List.of(suppressedFiles));
-        }
+        suppressedFiles_.addAll(CollectionTools.combineStringsToFiles(suppressedFiles));
         return this;
     }
 
@@ -1148,10 +1106,9 @@ public class SourceSet {
      * @return this operation instance
      * @see #suppressedFiles(File...)
      */
-    public SourceSet suppressedFiles(Collection<File> suppressedFiles) {
-        if (ObjectTools.isNotEmpty(suppressedFiles)) {
-            suppressedFiles_.addAll(suppressedFiles);
-        }
+    @SafeVarargs
+    public final SourceSet suppressedFiles(Collection<File>... suppressedFiles) {
+        suppressedFiles_.addAll(CollectionTools.combine(suppressedFiles));
         return this;
     }
 
@@ -1160,14 +1117,12 @@ public class SourceSet {
      * <p>
      * The files to be suppressed when generating documentation.
      *
-     * @param suppressedFiles one or moe suppressed files
+     * @param suppressedFiles one or more suppressed files
      * @return this operation instance
-     * @see #suppressedFiles(Collection)
+     * @see #suppressedFiles(Collection...)
      */
     public SourceSet suppressedFiles(File... suppressedFiles) {
-        if (ObjectTools.isNotEmpty(suppressedFiles)) {
-            return suppressedFiles(List.of(suppressedFiles));
-        }
+        suppressedFiles_.addAll(CollectionTools.combine(suppressedFiles));
         return this;
     }
 
@@ -1176,14 +1131,12 @@ public class SourceSet {
      * <p>
      * The files to be suppressed when generating documentation.
      *
-     * @param suppressedFiles one or moe suppressed files
+     * @param suppressedFiles one or more suppressed files
      * @return this operation instance
-     * @see #suppressedFilesPaths(Collection)
+     * @see #suppressedFilesPaths(Collection...)
      */
     public SourceSet suppressedFiles(Path... suppressedFiles) {
-        if (ObjectTools.isNotEmpty(suppressedFiles)) {
-            return suppressedFilesPaths(List.of(suppressedFiles));
-        }
+        suppressedFiles_.addAll(CollectionTools.combinePathsToFiles(suppressedFiles));
         return this;
     }
 
@@ -1196,10 +1149,9 @@ public class SourceSet {
      * @return this operation instance
      * @see #suppressedFiles(Path...)
      */
-    public SourceSet suppressedFilesPaths(Collection<Path> suppressedFiles) {
-        if (ObjectTools.isNotEmpty(suppressedFiles)) {
-            return suppressedFiles(suppressedFiles.stream().map(Path::toFile).toList());
-        }
+    @SafeVarargs
+    public final SourceSet suppressedFilesPaths(Collection<Path>... suppressedFiles) {
+        suppressedFiles_.addAll(CollectionTools.combinePathsToFiles(suppressedFiles));
         return this;
     }
 
@@ -1212,10 +1164,9 @@ public class SourceSet {
      * @return this operation instance
      * @see #suppressedFiles(String...)
      */
-    public SourceSet suppressedFilesStrings(Collection<String> suppressedFiles) {
-        if (ObjectTools.isNotEmpty(suppressedFiles)) {
-            return suppressedFiles(suppressedFiles.stream().map(File::new).toList());
-        }
+    @SafeVarargs
+    public final SourceSet suppressedFilesStrings(Collection<String>... suppressedFiles) {
+        suppressedFiles_.addAll(CollectionTools.combineStringsToFiles(suppressedFiles));
         return this;
     }
 }
