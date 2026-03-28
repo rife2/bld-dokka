@@ -28,6 +28,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -39,6 +41,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings("PMD.UseConcurrentHashMap")
 public class SourceSet {
 
+    private static final Logger LOGGER = Logger.getLogger(SourceSet.class.getName());
     private final List<File> classpath_ = new ArrayList<>();
     private final Map<String, String> dependentSourceSets_ = new ConcurrentSkipListMap<>();
     private final List<DocumentedVisibility> documentedVisibilities_ = new ArrayList<>();
@@ -46,6 +49,7 @@ public class SourceSet {
     private final List<File> includes_ = new ArrayList<>();
     private final List<String> perPackageOptions_ = new ArrayList<>();
     private final List<File> samples_ = new ArrayList<>();
+    private final boolean silent_;
     private final Map<String, String> srcLinks_ = new ConcurrentSkipListMap<>();
     private final List<File> src_ = new ArrayList<>();
     private final List<File> suppressedFiles_ = new ArrayList<>();
@@ -60,6 +64,22 @@ public class SourceSet {
     private boolean reportUndocumented_;
     private boolean skipDeprecated_;
     private String sourceSetName_;
+
+    /**
+     * Creates a new instance.
+     */
+    public SourceSet() {
+        this.silent_ = false;
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param silent {@code true} to suppress all output
+     */
+    public SourceSet(boolean silent) {
+        this.silent_ = silent;
+    }
 
     /**
      * Sets the platform used for setting up analysis. Default is {@link AnalysisPlatform#JVM JVM}
@@ -363,6 +383,8 @@ public class SourceSet {
     public SourceSet dependentSourceSets(String moduleName, String sourceSetName) {
         if (TextTools.isNotBlank(moduleName, sourceSetName)) {
             dependentSourceSets_.put(moduleName, sourceSetName);
+        } else if (LOGGER.isLoggable(Level.WARNING) && !silent_) {
+            LOGGER.warning("The module and source set names must be valid.");
         }
         return this;
     }
@@ -447,6 +469,8 @@ public class SourceSet {
     public SourceSet externalDocumentationLinks(String url, String packageListUrl) {
         if (TextTools.isNotBlank(url, packageListUrl)) {
             externalDocumentationLinks_.put(url, packageListUrl);
+        } else if (LOGGER.isLoggable(Level.WARNING) && !silent_) {
+            LOGGER.warning("The URL and package list URL must be valid.");
         }
         return this;
     }

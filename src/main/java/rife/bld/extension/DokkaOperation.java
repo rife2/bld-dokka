@@ -58,7 +58,8 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
             "^.*(dokka-base|analysis-kotlin-descriptors|javadoc-plugin|kotlin-as-java-plugin|korte-jvm).*\\.jar$";
     private static final String JEKYLL_PLUGIN_REGEXP =
             "^.*(dokka-base|analysis-kotlin-descriptors|jekyll-plugin|gfm-plugin|freemarker).*\\.jar$";
-    private final Logger LOGGER = Logger.getLogger(DokkaOperation.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(DokkaOperation.class.getName());
+    private static final String SEMICOLON = ";";
     private final Map<String, String> globalLinks_ = new ConcurrentHashMap<>();
     private final List<String> globalPackageOptions_ = new ArrayList<>();
     private final List<String> globalSrcLinks_ = new ArrayList<>();
@@ -83,6 +84,11 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         if (project_ == null) {
             if (LOGGER.isLoggable(Level.SEVERE) && !silent()) {
                 LOGGER.severe("A project must be specified.");
+            }
+            throw new ExitStatusException(ExitStatusException.EXIT_FAILURE);
+        } else if (outputFormat_ == null) {
+            if (LOGGER.isLoggable(Level.SEVERE) && !silent()) {
+                LOGGER.severe("An output format must be specified.");
             }
             throw new ExitStatusException(ExitStatusException.EXIT_FAILURE);
         } else {
@@ -117,6 +123,8 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
             if (!pluginsClasspath_.isEmpty()) {
                 args.add("-pluginsClasspath");
                 args.add(pluginsClasspath_.stream().map(File::getAbsolutePath).collect(Collectors.joining(SEMICOLON)));
+            } else if (LOGGER.isLoggable(Level.SEVERE) && !silent()) {
+                LOGGER.severe("No valid plugins jars found or specified.");
             }
 
             // -sourceSet
@@ -178,7 +186,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
             // -loggingLevel
             if (loggingLevel_ != null) {
                 args.add("-loggingLevel");
-                args.add(loggingLevel_.name().toLowerCase());
+                args.add(loggingLevel_.toValue());
             }
 
             // -moduleName
@@ -242,7 +250,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     @SuppressFBWarnings("EI_EXPOSE_REP2")
     public DokkaOperation fromProject(BaseProject project) {
         project_ = project;
-        sourceSet_ = new SourceSet()
+        sourceSet_ = new SourceSet(silent())
                 .src(new File(project.srcMainDirectory(), "kotlin"))
                 .classpath(project.compileClasspathJars())
                 .classpath(project.providedClasspathJars());
@@ -758,6 +766,8 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     public DokkaOperation pluginConfigurations(String name, String jsonConfiguration) {
         if (TextTools.isNotBlank(name, jsonConfiguration)) {
             pluginsConfiguration_.put(name, jsonConfiguration);
+        } else if (LOGGER.isLoggable(Level.WARNING) && !silent()) {
+            LOGGER.warning("A plugin name and configuration are required.");
         }
         return this;
     }

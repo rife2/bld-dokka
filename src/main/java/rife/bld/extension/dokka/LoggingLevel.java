@@ -23,5 +23,14 @@ package rife.bld.extension.dokka;
  * @since 1.0
  */
 public enum LoggingLevel {
-    DEBUG, PROGRESS, INFO, WARN, ERROR
+    DEBUG, INFO, PROGRESS, WARN, ERROR;
+
+    /**
+     * Returns the logging level value
+     *
+     * @return the logging level value
+     */
+    public String toValue() {
+        return name().toLowerCase();
+    }
 }
