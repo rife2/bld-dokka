@@ -297,7 +297,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param delayTemplateSubstitution the delay
      * @return this operation instance
      */
-    public DokkaOperation delayTemplateSubstitution(Boolean delayTemplateSubstitution) {
+    public DokkaOperation delayTemplateSubstitution(boolean delayTemplateSubstitution) {
         delayTemplateSubstitution_ = delayTemplateSubstitution;
         return this;
     }
@@ -313,7 +313,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param failOnWarning {@code true} or {@code false}
      * @return this operation instance
      */
-    public DokkaOperation failOnWarning(Boolean failOnWarning) {
+    public DokkaOperation failOnWarning(boolean failOnWarning) {
         failOnWarning_ = failOnWarning;
         return this;
     }
@@ -657,7 +657,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param noSuppressObviousFunctions {@code true} or {@code false}
      * @return this operation instance
      */
-    public DokkaOperation noSuppressObviousFunctions(Boolean noSuppressObviousFunctions) {
+    public DokkaOperation noSuppressObviousFunctions(boolean noSuppressObviousFunctions) {
         noSuppressObviousFunctions_ = noSuppressObviousFunctions;
         return this;
     }
@@ -678,7 +678,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      * @see SourceSet#externalDocumentationLinks(String, String)
      */
-    public DokkaOperation offlineMode(Boolean offlineMode) {
+    public DokkaOperation offlineMode(boolean offlineMode) {
         offlineMode_ = offlineMode;
         return this;
     }
@@ -900,7 +900,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param suppressInheritedMembers {@code true} or {@code false}
      * @return this operation instance
      */
-    public DokkaOperation suppressInheritedMembers(Boolean suppressInheritedMembers) {
+    public DokkaOperation suppressInheritedMembers(boolean suppressInheritedMembers) {
         suppressInheritedMembers_ = suppressInheritedMembers;
         return this;
     }

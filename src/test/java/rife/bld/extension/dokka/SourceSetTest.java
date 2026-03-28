@@ -20,8 +20,12 @@ import org.assertj.core.api.AutoCloseableSoftAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import rife.bld.extension.testing.LoggingExtension;
+import rife.bld.extension.testing.TestLogHandler;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,6 +48,8 @@ class SourceSetTest {
     private static final String INCLUDES_2 = "includes2";
     private static final String INCLUDES_3 = "includes3";
     private static final String INCLUDES_4 = "includes4";
+    @SuppressWarnings("LoggerInitializedWithForeignClass")
+    private static final Logger LOGGER = Logger.getLogger(SourceSet.class.getName());
     private static final String OPTION_1 = "option1";
     private static final String OPTION_2 = "option2";
     private static final String PATH_1 = "path1";
@@ -58,6 +65,14 @@ class SourceSetTest {
     private static final String SUP_1 = "sup1";
     private static final String SUP_2 = "sup2";
     private static final String SUP_3 = "sup3";
+    private static final TestLogHandler TEST_LOG_HANDLER = new TestLogHandler();
+
+    @RegisterExtension
+    @SuppressWarnings("unused")
+    private static final LoggingExtension LOGGING_EXTENSION = new LoggingExtension(
+            LOGGER,
+            TEST_LOG_HANDLER
+    );
 
     @ParameterizedTest
     @ValueSource(strings = {"1.8", "19", "22"})
@@ -245,6 +260,72 @@ class SourceSetTest {
             var args = new SourceSet();
             args.classpathStrings(List.of(CLASSPATH_1, CLASSPATH_2));
             assertThat(args.classpath()).containsExactly(new File(CLASSPATH_1), new File(CLASSPATH_2));
+        }
+    }
+
+    @Nested
+    @DisplayName("Dependent Source Sets Tests")
+    class DependentSourceSetsTests {
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        void dependentSourceSetsMissingModuleName(String name) {
+            new SourceSet().dependentSourceSets(name, "moduleName");
+            assertThat(TEST_LOG_HANDLER.containsMessage("The module and source set names must be valid.")).isTrue();
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        void dependentSourceSetsMissingSetName(String name) {
+            new SourceSet().dependentSourceSets("moduleName", name);
+            assertThat(TEST_LOG_HANDLER.containsMessage("The module and source set names must be valid.")).isTrue();
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        void dependentSourceSetsNoNames(String name) {
+            new SourceSet().dependentSourceSets(name, name);
+            assertThat(TEST_LOG_HANDLER.containsMessage("The module and source set names must be valid.")).isTrue();
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        void dependentSourceSetsNoNamesSilent(String name) {
+            new SourceSet(true).dependentSourceSets(name, name);
+            assertThat(TEST_LOG_HANDLER.isEmpty()).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("External Documentation Links Tests")
+    class ExternalDocumentationLinksTests {
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        void externalDocumentationLinksMissingPackageListUrl(String url) {
+            new SourceSet().externalDocumentationLinks(url, "packageListUrl");
+            assertThat(TEST_LOG_HANDLER.containsMessage("The URL and package list URL must be valid.")).isTrue();
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        void externalDocumentationLinksMissingSetUrl(String url) {
+            new SourceSet().externalDocumentationLinks("packageListUrl", url);
+            assertThat(TEST_LOG_HANDLER.containsMessage("The URL and package list URL must be valid.")).isTrue();
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        void externalDocumentationLinksNoNames(String url) {
+            new SourceSet().externalDocumentationLinks(url, url);
+            assertThat(TEST_LOG_HANDLER.containsMessage("The URL and package list URL must be valid.")).isTrue();
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        void externalDocumentationLinksNoNamesSilent(String url) {
+            new SourceSet(true).externalDocumentationLinks(url, url);
+            assertThat(TEST_LOG_HANDLER.isEmpty()).isTrue();
         }
     }
 

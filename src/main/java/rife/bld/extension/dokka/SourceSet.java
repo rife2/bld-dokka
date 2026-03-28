@@ -674,7 +674,7 @@ public class SourceSet {
      * @param noJdkLink {@code true} or {@code false}
      * @return this operation instance
      */
-    public SourceSet noJdkLink(Boolean noJdkLink) {
+    public SourceSet noJdkLink(boolean noJdkLink) {
         noJdkLink_ = noJdkLink;
         return this;
     }
@@ -703,7 +703,7 @@ public class SourceSet {
      * @param noStdlibLink {@code true} or {@code false}
      * @return this operation instance
      */
-    public SourceSet noStdlibLink(Boolean noStdlibLink) {
+    public SourceSet noStdlibLink(boolean noStdlibLink) {
         noStdlibLink_ = noStdlibLink;
         return this;
     }
@@ -783,7 +783,7 @@ public class SourceSet {
      * @param reportUndocumented {@code true} or {@code false}
      * @return this operation instance
      */
-    public SourceSet reportUndocumented(Boolean reportUndocumented) {
+    public SourceSet reportUndocumented(boolean reportUndocumented) {
         reportUndocumented_ = reportUndocumented;
         return this;
     }
