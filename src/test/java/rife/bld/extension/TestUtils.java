@@ -20,7 +20,6 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-import static rife.bld.extension.DokkaOperation.SEMICOLON;
 
 @SuppressWarnings("PMD.TestClassWithoutTestCases")
 public final class TestUtils {
@@ -36,6 +35,7 @@ public final class TestUtils {
      * @return the local path
      */
     public static String localPath(String... fileNames) {
-        return Arrays.stream(fileNames).map(f -> new File(f).getAbsolutePath()).collect(Collectors.joining(SEMICOLON));
+        return Arrays.stream(fileNames)
+                .map(f -> new File(f).getAbsolutePath()).collect(Collectors.joining(";"));
     }
 }

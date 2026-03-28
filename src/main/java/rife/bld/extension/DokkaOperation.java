@@ -148,7 +148,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
             // -outputDir
             if (outputDir_ != null) {
                 if (!IOTools.mkdirs(outputDir_)) {
-                    throw new RuntimeException("Could not create: " + outputDir_.getAbsolutePath());
+                    throw new IllegalArgumentException("Could not create: " + outputDir_.getAbsolutePath());
                 }
 
                 args.add("-outputDir");
@@ -603,7 +603,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param configuration the configuration file path
      */
-    @SuppressFBWarnings("PATH_TRAVERSAL_IN")
+    @SuppressFBWarnings(value = "PATH_TRAVERSAL_IN", justification = "caller controls the input")
     public DokkaOperation json(String configuration) {
         return json(new File(configuration));
     }
@@ -702,7 +702,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param outputDir the output directory
      * @return this operation instance
      */
-    @SuppressFBWarnings("PATH_TRAVERSAL_IN")
+    @SuppressFBWarnings(value = "PATH_TRAVERSAL_IN", justification = "caller controls the input")
     public DokkaOperation outputDir(String outputDir) {
         return outputDir(new File(outputDir));
     }

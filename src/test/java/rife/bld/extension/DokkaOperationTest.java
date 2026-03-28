@@ -29,6 +29,7 @@ import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
 import rife.bld.extension.dokka.SourceSet;
 import rife.bld.extension.testing.LoggingExtension;
+import rife.bld.extension.testing.TestLogHandler;
 import rife.bld.operations.exceptions.ExitStatusException;
 
 import java.io.File;
@@ -39,6 +40,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,10 +56,8 @@ class DokkaOperationTest {
     private static final String FILE_3 = "file3";
     private static final String FILE_4 = "file4";
 
-    @RegisterExtension
-    @SuppressWarnings({"unused"})
-    private static final LoggingExtension LOGGING_EXTENSION = new LoggingExtension(DokkaOperation.class.getName());
 
+    @SuppressWarnings("LoggerInitializedWithForeignClass")
     private static final Logger LOGGER = Logger.getLogger(DokkaOperation.class.getName());
     private static final String OPTION_1 = "option1";
     private static final String OPTION_2 = "option2";
@@ -125,7 +125,7 @@ class DokkaOperationTest {
                     .pluginsClasspath(new File(PATH_1))
                     .pluginsClasspath(PATH_2)
                     .pluginsClasspath(List.of(new File(PATH_3), new File(PATH_4)))
-                    .sourceSet(new SourceSet().classpath(
+                    .sourceSet(new SourceSet(false).classpath(
                             List.of(
                                     new File("examples/foo.jar"),
                                     new File("examples/bar.jar")
@@ -173,7 +173,7 @@ class DokkaOperationTest {
                     "-failOnWarning",
                     "-globalLinks", "s^gLink1^^s2^gLink2",
                     "-globalPackageOptions", OPTION_1 + ';' + OPTION_2 + ';' + OPTION_3 + ';' + OPTION_4,
-                    "-globalSrcLinks_", "link1;link2;link3;link4",
+                    "-globalSrcLinks", "link1;link2;link3;link4",
                     "-includes", TestUtils.localPath(FILE_1, FILE_2, FILE_3, FILE_4),
                     "-loggingLevel", "debug",
                     "-moduleName", "name",
@@ -320,6 +320,26 @@ class DokkaOperationTest {
                 op.outputDir(FILE_3);
                 assertThat(op.outputDir()).isEqualTo(new File(FILE_3));
             }
+        }
+
+        @Nested
+        @DisplayName("Output Format Tests")
+        class OutputFormatTests {
+
+            @Test
+            void outputFormat() {
+                var op = new DokkaOperation();
+                op.outputFormat(OutputFormat.JAVADOC);
+                assertThat(op.outputFormat()).isEqualTo(OutputFormat.JAVADOC);
+            }
+
+            @Test
+            void outputFormatNull() {
+                var op = new DokkaOperation();
+                op.outputFormat(null);
+                assertThat(TEST_LOG_HANDLER.containsMessage("No valid output format specified.")).isTrue();
+            }
+
         }
 
         @Nested
