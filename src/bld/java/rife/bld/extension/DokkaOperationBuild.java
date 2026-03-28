@@ -35,7 +35,7 @@ public class DokkaOperationBuild extends Project {
     public DokkaOperationBuild() {
         pkg = "rife.bld.extension";
         name = "bld-dokka";
-        version = version(1, 0, 5, "SNAPSHOT");
+        version = version(1, 1, 0);
 
         javaRelease = 17;
 
