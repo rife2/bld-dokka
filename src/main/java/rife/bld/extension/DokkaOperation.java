@@ -165,7 +165,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
                 args.add("-failOnWarning");
             }
 
-            // -globalLinks_
+            // -globalLinks
             if (!globalLinks_.isEmpty()) {
                 args.add("-globalLinks");
                 var links = new ArrayList<String>();
@@ -182,7 +182,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
 
             // -globalSrcLinks
             if (!globalSrcLinks_.isEmpty()) {
-                args.add("-globalSrcLinks_");
+                args.add("-globalSrcLinks");
                 args.add(String.join(SEMICOLON, globalSrcLinks_));
             }
 
