@@ -42,9 +42,9 @@ public class DokkaOperationBuild extends Project {
         downloadSources = true;
         autoDownloadPurge = true;
 
-        repositories = List.of(MAVEN_CENTRAL, CENTRAL_SNAPSHOTS, RIFE2_RELEASES);
+        repositories = List.of(MAVEN_CENTRAL, CENTRAL_SNAPSHOTS, RIFE2_RELEASES, RIFE2_SNAPSHOTS);
 
-        var dokka = version(2, 2, 0, "Beta");
+        var dokka = version(2, 2, 0);
         var junit = version(6, 0, 3);
         scope(compile)
                 .include(dependency("org.jetbrains.dokka", "dokka-cli", dokka))
