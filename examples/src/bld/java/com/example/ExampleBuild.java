@@ -34,9 +34,9 @@ public class ExampleBuild extends Project {
         autoDownloadPurge = true;
         downloadSources = true;
 
-        repositories = List.of(MAVEN_CENTRAL, CENTRAL_SNAPSHOTS, RIFE2_RELEASES);
+        repositories = List.of(MAVEN_CENTRAL, CENTRAL_SNAPSHOTS, RIFE2_RELEASES, RIFE2_SNAPSHOTS);
 
-        final var kotlin = version(2, 3, 10);
+        final var kotlin = version(2, 3, 20);
         final var junit = version(6, 0, 3);
         scope(compile)
                 .include(dependency("org.jetbrains.kotlin", "kotlin-stdlib", kotlin));
