@@ -74,6 +74,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     private boolean noSuppressObviousFunctions_;
     private boolean offlineMode_;
     private File outputDir_;
+    private OutputFormat outputFormat_;
     private BaseProject project_;
     private SourceSet sourceSet_;
     private boolean suppressInheritedMembers_;
@@ -119,9 +120,18 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
             args.add("org.jetbrains.dokka.MainKt");
 
             // -pluginClasspath
-            if (!pluginsClasspath_.isEmpty()) {
+            var classPath = new ArrayList<>(pluginsClasspath_);
+            if (outputFormat_ != null) {
+                switch (outputFormat_) {
+                    case HTML -> classPath.addAll(getJarList(project_.libBldDirectory(), HTML_PLUGIN_REGEXP));
+                    case MARKDOWN -> classPath.addAll(getJarList(project_.libBldDirectory(), GFM_PLUGIN_REGEXP));
+                    case JEKYLL -> classPath.addAll(getJarList(project_.libBldDirectory(), JEKYLL_PLUGIN_REGEXP));
+                    default -> classPath.addAll(getJarList(project_.libBldDirectory(), JAVADOC_PLUGIN_REGEXP));
+                }
+            }
+            if (!classPath.isEmpty()) {
                 args.add("-pluginsClasspath");
-                args.add(pluginsClasspath_.stream().map(File::getAbsolutePath).collect(Collectors.joining(SEMICOLON)));
+                args.add(classPath.stream().map(File::getAbsolutePath).collect(Collectors.joining(SEMICOLON)));
             } else if (LOGGER.isLoggable(Level.SEVERE) && !silent()) {
                 LOGGER.severe("No valid plugins jars found or specified.");
             }
@@ -723,19 +733,25 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
+     * Retrieves the output format.
+     *
+     * @return the output format
+     */
+    public OutputFormat outputFormat() {
+        return outputFormat_;
+    }
+
+    /**
      * Sets the Dokka {@link OutputFormat output format}.
      *
      * @param format The {@link OutputFormat output format}
      * @return this operation instance
      */
     public DokkaOperation outputFormat(OutputFormat format) {
-        pluginsClasspath_.clear();
-        switch (format) {
-            case JAVADOC -> pluginsClasspath_.addAll(getJarList(project_.libBldDirectory(), JAVADOC_PLUGIN_REGEXP));
-            case HTML -> pluginsClasspath_.addAll(getJarList(project_.libBldDirectory(), HTML_PLUGIN_REGEXP));
-            case MARKDOWN -> pluginsClasspath_.addAll(getJarList(project_.libBldDirectory(), GFM_PLUGIN_REGEXP));
-            case JEKYLL -> pluginsClasspath_.addAll(getJarList(project_.libBldDirectory(), JEKYLL_PLUGIN_REGEXP));
-            default -> throw new IllegalStateException("Unexpected format: " + format);
+        if (format != null) {
+            outputFormat_ = format;
+        } else if (LOGGER.isLoggable(Level.WARNING) && !silent()) {
+            LOGGER.warning("No valid output format specified.");
         }
         return this;
     }
