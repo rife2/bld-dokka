@@ -24,30 +24,33 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EmptySource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.NullSource;
 import rife.bld.blueprints.BaseProjectBlueprint;
 import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
 import rife.bld.extension.dokka.SourceSet;
 import rife.bld.extension.testing.LoggingExtension;
 import rife.bld.extension.testing.TestLogHandler;
-import rife.bld.operations.exceptions.ExitStatusException;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
+import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 
 @ExtendWith(LoggingExtension.class)
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class DokkaOperationTest {
 
     private static final File EXAMPLES = new File("examples");
@@ -120,12 +123,16 @@ class DokkaOperationTest {
                     .offlineMode(true)
                     .outputDir(new File(EXAMPLES, "build"))
                     .outputFormat(OutputFormat.JAVADOC)
-                    .pluginConfigurations("name", "{\"json\"}")
-                    .pluginConfigurations(Map.of("{\"name2\"}", "json2", "name3}", "{json3"))
+                    .pluginConfigurations("org.jetbrains.dokka.android.AndroidDocumentationPlugin",
+                            "{\"android\":{\"packageOptions\":[{\"prefix\":\"com.myapp.internal\"," +
+                                    "\"suppress\":true}]}}")
+                    .pluginConfigurations("org.jetbrains.dokka.base.DokkaBase",
+                            "{\"separateInheritedMembers\":false," +
+                                    "\"mergeImplicitExpectActualDeclarations\":true}")
                     .pluginsClasspath(new File(PATH_1))
                     .pluginsClasspath(PATH_2)
                     .pluginsClasspath(List.of(new File(PATH_3), new File(PATH_4)))
-                    .sourceSet(new SourceSet(false).classpath(
+                    .sourceSet(new SourceSet().classpath(
                             List.of(
                                     new File("examples/foo.jar"),
                                     new File("examples/bar.jar")
@@ -137,7 +144,7 @@ class DokkaOperationTest {
                 softly.assertThat(op.globalPackageOptions()).as("globalPackageOptions").hasSize(4);
                 softly.assertThat(op.globalSrcLink()).as("globalSrcLink").hasSize(4);
                 softly.assertThat(op.includes()).as("includes").hasSize(4);
-                softly.assertThat(op.pluginConfigurations()).as("pluginConfigurations").hasSize(3);
+                softly.assertThat(op.pluginConfigurations()).as("pluginConfigurations").hasSize(2);
                 softly.assertThat(op.pluginsClasspath()).as("pluginsClasspath").hasSize(4);
             }
 
@@ -180,7 +187,10 @@ class DokkaOperationTest {
                     "-moduleVersion", "1.0",
                     "-noSuppressObviousFunctions",
                     "-offlineMode",
-                    "-pluginsConfiguration", "{\\\"name2\\\"}={json2}^^{name}={\\\"json\\\"}^^{name3}}={{json3}",
+                    "-pluginsConfiguration", "org.jetbrains.dokka.android.AndroidDocumentationPlugin={\"android\":" +
+                            "{\"packageOptions\":[{\"prefix\":\"com.myapp.internal\",\"suppress\":true}]}}" +
+                            "^^org.jetbrains.dokka.base.DokkaBase={\"separateInheritedMembers\":false," +
+                            "\"mergeImplicitExpectActualDeclarations\":true}",
                     "-suppressInheritedMembers",
                     jsonConf);
 
@@ -205,15 +215,15 @@ class DokkaOperationTest {
                     .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "examples",
                             "Examples"))
                     .outputDir("build/javadoc");
-            assertThatThrownBy(op::execute).isInstanceOf(ExitStatusException.class);
-            assertThat(TEST_LOG_HANDLER.containsMessage("An output format must be specified.")).isTrue();
+            assertThatThrownBy(op::execute).isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("outputFormat");
         }
 
         @Test
         void executeNoProject() {
             var op = new DokkaOperation();
-            assertThatThrownBy(op::execute).isInstanceOf(ExitStatusException.class);
-            assertThat(TEST_LOG_HANDLER.containsMessage("A project must be specified.")).isTrue();
+            assertThatThrownBy(op::execute).isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("project");
         }
     }
 
@@ -334,10 +344,10 @@ class DokkaOperationTest {
             }
 
             @Test
+            @SuppressWarnings("DataFlowIssue")
             void outputFormatNull() {
                 var op = new DokkaOperation();
-                op.outputFormat(null);
-                assertThat(TEST_LOG_HANDLER.containsMessage("No valid output format specified.")).isTrue();
+                assertThatThrownBy(() -> op.outputFormat(null)).isInstanceOf(NullPointerException.class);
             }
 
         }
@@ -389,6 +399,375 @@ class DokkaOperationTest {
                 op.pluginsClasspathStrings(List.of(FILE_1, FILE_2));
                 assertThat(op.pluginsClasspath()).containsExactly(new File(FILE_1), new File(FILE_2));
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("Plugin Configurations Tests")
+    class PluginConfigurationsTests {
+
+        private static final String JSON_BASE = "{\"separateInheritedMembers\":false}";
+        private static final String JSON_GFM = "{\"gfm\":{\"hardLineBreaks\":true}}";
+        private static final String PLUGIN_BASE = "org.jetbrains.dokka.base.DokkaBase";
+        private static final String PLUGIN_GFM = "org.jetbrains.dokka.gfm.GfmPlugin";
+
+        @Test
+        void pluginConfigurationsEmptyJson() {
+            var op = new DokkaOperation();
+            assertThatThrownBy(() -> op.pluginConfigurations(PLUGIN_BASE, ""))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void pluginConfigurationsEmptyPluginId() {
+            var op = new DokkaOperation();
+            assertThatThrownBy(() -> op.pluginConfigurations("", JSON_BASE))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void pluginConfigurationsMultiplePreservesOrder() {
+            var op = new DokkaOperation();
+            op.pluginConfigurations(PLUGIN_BASE, JSON_BASE)
+                    .pluginConfigurations(PLUGIN_GFM, JSON_GFM);
+
+            assertThat(op.pluginConfigurations().keySet())
+                    .containsExactly(PLUGIN_BASE, PLUGIN_GFM);
+        }
+
+        @Test
+        @SuppressWarnings("DataFlowIssue")
+        void pluginConfigurationsNullJson() {
+            var op = new DokkaOperation();
+            assertThatThrownBy(() -> op.pluginConfigurations(PLUGIN_BASE, null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        @SuppressWarnings("DataFlowIssue")
+        void pluginConfigurationsNullPluginId() {
+            var op = new DokkaOperation();
+            assertThatThrownBy(() -> op.pluginConfigurations(null, JSON_BASE))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        void pluginConfigurationsOverwritesSamePlugin() {
+            var op = new DokkaOperation();
+            op.pluginConfigurations(PLUGIN_BASE, JSON_BASE)
+                    .pluginConfigurations(PLUGIN_BASE, JSON_GFM);
+
+            assertThat(op.pluginConfigurations())
+                    .containsExactly(entry(PLUGIN_BASE, JSON_GFM));
+        }
+
+        @Test
+        void pluginConfigurationsSingle() {
+            var op = new DokkaOperation();
+            op.pluginConfigurations(PLUGIN_BASE, JSON_BASE);
+            assertThat(op.pluginConfigurations())
+                    .containsExactly(entry(PLUGIN_BASE, JSON_BASE));
+        }
+
+        @Nested
+        @DisplayName("Plugin Configurations Map Overload Tests")
+        class PluginConfigurationsMapTests {
+
+            private static final String JSON_BASE = "{\"separateInheritedMembers\":false}";
+            private static final String JSON_GFM = "{\"gfm\":{\"hardLineBreaks\":true}}";
+            private static final String PLUGIN_BASE = "org.jetbrains.dokka.base.DokkaBase";
+            private static final String PLUGIN_GFM = "org.jetbrains.dokka.gfm.GfmPlugin";
+
+            @Test
+            void pluginConfigurationsMapAddsAll() {
+                var op = new DokkaOperation();
+                var configs = new LinkedHashMap<String, String>();
+                configs.put(PLUGIN_BASE, JSON_BASE);
+                configs.put(PLUGIN_GFM, JSON_GFM);
+
+                op.pluginConfigurations(configs);
+
+                assertThat(op.pluginConfigurations())
+                        .containsExactly(
+                                entry(PLUGIN_BASE, JSON_BASE),
+                                entry(PLUGIN_GFM, JSON_GFM)
+                        );
+            }
+
+            @Test
+            void pluginConfigurationsMapEmptyMapAllowed() {
+                var op = new DokkaOperation();
+                op.pluginConfigurations(Collections.emptyMap());
+                assertThat(op.pluginConfigurations()).isEmpty();
+            }
+
+            @Test
+            void pluginConfigurationsMapMergesWithExisting() {
+                var op = new DokkaOperation();
+                op.pluginConfigurations(PLUGIN_BASE, JSON_BASE);
+
+                var moreConfigs = Map.of(PLUGIN_GFM, JSON_GFM);
+                op.pluginConfigurations(moreConfigs);
+
+                assertThat(op.pluginConfigurations())
+                        .hasSize(2)
+                        .containsEntry(PLUGIN_BASE, JSON_BASE)
+                        .containsEntry(PLUGIN_GFM, JSON_GFM);
+            }
+
+            @Test
+            @SuppressWarnings("DataFlowIssue")
+            void pluginConfigurationsMapNullThrows() {
+                var op = new DokkaOperation();
+                assertThatThrownBy(() -> op.pluginConfigurations(null))
+                        .isInstanceOf(NullPointerException.class)
+                        .hasMessageContaining("pluginConfigurations");
+            }
+
+            @Test
+            void pluginConfigurationsMapOverwritesExistingKeys() {
+                var op = new DokkaOperation();
+                op.pluginConfigurations(PLUGIN_BASE, JSON_BASE);
+
+                var newConfigs = Map.of(PLUGIN_BASE, JSON_GFM);
+                op.pluginConfigurations(newConfigs);
+
+                assertThat(op.pluginConfigurations())
+                        .containsExactly(entry(PLUGIN_BASE, JSON_GFM));
+            }
+
+            @Test
+            void pluginConfigurationsMapPreservesOrder() {
+                var configs = new LinkedHashMap<String, String>();
+                configs.put(PLUGIN_GFM, JSON_GFM);  // insert GFM first
+                configs.put(PLUGIN_BASE, JSON_BASE);
+
+                var op = new DokkaOperation().pluginConfigurations(configs);
+
+                assertThat(op.pluginConfigurations().keySet())
+                        .containsExactly(PLUGIN_GFM, PLUGIN_BASE); // LinkedHashMap preserves it
+            }
+
+            @Test
+            void pluginConfigurationsMapWithEmptyKeyAllowed() {
+                var op = new DokkaOperation();
+                var configs = Map.of("", JSON_BASE); // empty string key
+
+                op.pluginConfigurations(configs);
+                assertThat(op.pluginConfigurations())
+                        .containsExactly(entry("", JSON_BASE));
+            }
+
+            @Test
+            void pluginConfigurationsMapWithEmptyValuesAllowed() {
+                var op = new DokkaOperation();
+                var configs = Map.of(PLUGIN_BASE, ""); // empty string value
+
+                op.pluginConfigurations(configs);
+                assertThat(op.pluginConfigurations())
+                        .containsExactly(entry(PLUGIN_BASE, ""));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("DokkaOperation Validation Tests")
+    @SuppressWarnings({"DataFlowIssue", "RedundantCast"})
+    class ValidationTests {
+
+        @Test
+        void executeRequiresProject() {
+            assertThatThrownBy(() -> new DokkaOperation()
+                    .outputFormat(OutputFormat.HTML)
+                    .sourceSet(new SourceSet())
+                    .execute())
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("project");
+        }
+
+        @Test
+        void fromProjectWithNull() {
+            assertThatThrownBy(() -> new DokkaOperation().fromProject(null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        void globalLinksWithNullOrEmpty(String arg) {
+            assertThatThrownBy(() -> new DokkaOperation().globalLinks(arg, "pkg"))
+                    .isInstanceOf(arg == null ? NullPointerException.class : IllegalArgumentException.class);
+            assertThatThrownBy(() -> new DokkaOperation().globalLinks("url", arg))
+                    .isInstanceOf(arg == null ? NullPointerException.class : IllegalArgumentException.class);
+            assertThatThrownBy(() -> new DokkaOperation().globalLinks((Map<String, String>) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().globalLinks(Map.of()))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void globalPackageOptionsWithNullOrEmpty() {
+            assertThatThrownBy(() -> new DokkaOperation().globalPackageOptions((String[]) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().globalPackageOptions((Collection<String>) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().globalPackageOptions(List.of()))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new DokkaOperation().globalPackageOptions("opt", null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().globalPackageOptions("opt", ""))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void globalSrcLinkWithNullOrEmpty() {
+            assertThatThrownBy(() -> new DokkaOperation().globalSrcLink((String[]) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().globalSrcLink((Collection<String>) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().globalSrcLink(List.of()))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new DokkaOperation().globalSrcLink("link", null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().globalSrcLink("link", ""))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest
+        @EmptySource
+        void includesWithEmpty(String arg) {
+            assertThatThrownBy(() -> new DokkaOperation().includes(arg))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new DokkaOperation().includesStrings(List.of("foo", arg)))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new DokkaOperation().includes(new String[0]))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new DokkaOperation().includesStrings(List.of()))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest
+        @NullSource
+        void includesWithNull(String arg) {
+            assertThatThrownBy(() -> new DokkaOperation().includes(arg))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().includesStrings(List.of("foo", arg)))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().includes((String[]) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().includesStrings((Collection<String>) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().includes((Path[]) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().includesPaths((Collection<Path>) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().includes((File[]) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().includes((Collection<File>) null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        void jsonWithNullOrEmpty() {
+            assertThatThrownBy(() -> new DokkaOperation().json((File) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().json((Path) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().json((String) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().json(""))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void loggingLevelWithNull() {
+            assertThatThrownBy(() -> new DokkaOperation().loggingLevel(null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        void moduleNameWithNullOrEmpty(String arg) {
+            assertThatThrownBy(() -> new DokkaOperation().moduleName(arg))
+                    .isInstanceOf(arg == null ? NullPointerException.class : IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        void moduleVersionWithNullOrEmpty(String arg) {
+            assertThatThrownBy(() -> new DokkaOperation().moduleVersion(arg))
+                    .isInstanceOf(arg == null ? NullPointerException.class : IllegalArgumentException.class);
+        }
+
+        @Test
+        void outputDirWithNullOrEmpty() {
+            assertThatThrownBy(() -> new DokkaOperation().outputDir((File) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().outputDir((Path) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().outputDir((String) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().outputDir(""))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void outputFormatWithNull() {
+            assertThatThrownBy(() -> new DokkaOperation().outputFormat(null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        void pluginConfigurationsWithNullOrEmpty() {
+            assertThatThrownBy(() -> new DokkaOperation().pluginConfigurations(null, "{}"))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().pluginConfigurations("plugin", null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().pluginConfigurations("", "{}"))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new DokkaOperation().pluginConfigurations("plugin", ""))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new DokkaOperation().pluginConfigurations((Map<String, String>) null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @ParameterizedTest
+        @EmptySource
+        void pluginsClasspathWithEmpty(String arg) {
+            assertThatThrownBy(() -> new DokkaOperation().pluginsClasspath(arg))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new DokkaOperation().pluginsClasspathStrings(List.of("foo", arg)))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new DokkaOperation().pluginsClasspath(new String[0]))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new DokkaOperation().pluginsClasspathStrings(List.of()))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest
+        @NullSource
+        void pluginsClasspathWithNull(String arg) {
+            assertThatThrownBy(() -> new DokkaOperation().pluginsClasspath(arg))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().pluginsClasspathStrings(List.of("foo", arg)))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().pluginsClasspath((String[]) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().pluginsClasspathStrings((Collection<String>) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().pluginsClasspath((Path[]) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().pluginsClasspathPaths((Collection<Path>) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().pluginsClasspath((File[]) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().pluginsClasspath((Collection<File>) null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        void sourceSetWithNull() {
+            assertThatThrownBy(() -> new DokkaOperation().sourceSet(null))
+                    .isInstanceOf(NullPointerException.class);
         }
     }
 }

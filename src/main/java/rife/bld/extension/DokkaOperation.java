@@ -16,6 +16,7 @@
 
 package rife.bld.extension;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import rife.bld.BaseProject;
 import rife.bld.extension.dokka.LoggingLevel;
@@ -27,16 +28,12 @@ import rife.bld.extension.tools.ObjectTools;
 import rife.bld.extension.tools.TextTools;
 import rife.bld.operations.AbstractProcessOperation;
 import rife.bld.operations.exceptions.ExitStatusException;
-import rife.tools.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -47,24 +44,36 @@ import java.util.stream.Collectors;
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
+@SuppressFBWarnings(
+        value = "EI_EXPOSE_REP",
+        justification = "Builder pattern intentionally exposes mutable collections"
+)
 public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
 
+    /**
+     * Separator used by Dokka CLI between list items in a single argument value.
+     */
+    public static final String DOKKA_LIST_SEPARATOR = ";";
     private static final String GFM_PLUGIN_REGEXP =
             "^.*(dokka-base|analysis-kotlin-descriptors|gfm-plugin|freemarker).*\\.jar$";
     private static final String HTML_PLUGIN_REGEXP =
             "^.*(dokka-base|analysis-kotlin-descriptors|kotlinx-html-jvm|freemarker).*\\.jar$";
+    private static final String INCLUDES = "includes";
     private static final String JAVADOC_PLUGIN_REGEXP =
             "^.*(dokka-base|analysis-kotlin-descriptors|javadoc-plugin|kotlin-as-java-plugin|korte-jvm).*\\.jar$";
     private static final String JEKYLL_PLUGIN_REGEXP =
             "^.*(dokka-base|analysis-kotlin-descriptors|jekyll-plugin|gfm-plugin|freemarker).*\\.jar$";
-    private static final Logger LOGGER = Logger.getLogger(DokkaOperation.class.getName());
-    private static final String SEMICOLON = ";";
-    private final Map<String, String> globalLinks_ = new ConcurrentHashMap<>();
+    private static final String PLUGINS_CLASSPATH = "pluginsClasspath";
+    private static final Logger logger = Logger.getLogger(DokkaOperation.class.getName());
+
+    // LinkedHashMap preserves insertion order for deterministic CLI output; single-threaded builder usage
+    // does not require ConcurrentHashMap here.
+    private final Map<String, String> globalLinks_ = new LinkedHashMap<>();
     private final List<String> globalPackageOptions_ = new ArrayList<>();
     private final List<String> globalSrcLinks_ = new ArrayList<>();
     private final List<File> includes_ = new ArrayList<>();
     private final List<File> pluginsClasspath_ = new ArrayList<>();
-    private final Map<String, String> pluginsConfiguration_ = new ConcurrentHashMap<>();
+    private final Map<String, String> pluginsConfiguration_ = new LinkedHashMap<>();
     private boolean delayTemplateSubstitution_;
     private boolean failOnWarning_;
     private File json_;
@@ -79,18 +88,21 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     private SourceSet sourceSet_;
     private boolean suppressInheritedMembers_;
 
+    /**
+     * Performs this operation.
+     *
+     * @throws NullPointerException     if {@code project} or {@link #outputFormat() outputformat}
+     *                                  or {@code sourceSet} are {@code null}
+     * @throws IllegalArgumentException if {@link #json() json} is {@code null} or does not exist
+     */
     @Override
     public void execute() throws IOException, InterruptedException, ExitStatusException {
-        if (project_ == null) {
-            if (LOGGER.isLoggable(Level.SEVERE) && !silent()) {
-                LOGGER.severe("A project must be specified.");
-            }
-            throw new ExitStatusException(ExitStatusException.EXIT_FAILURE);
-        } else if (outputFormat_ == null) {
-            if (LOGGER.isLoggable(Level.SEVERE) && !silent()) {
-                LOGGER.severe("An output format must be specified.");
-            }
-            throw new ExitStatusException(ExitStatusException.EXIT_FAILURE);
+        ObjectTools.requireNonNull(project_, "project");
+        ObjectTools.requireNonNull(outputFormat_, "outputFormat");
+        ObjectTools.requireNonNull(sourceSet_, "sourceSet");
+
+        if (json_ != null && !json_.exists()) {
+            throw new IllegalArgumentException("JSON config not found: " + json_.getAbsolutePath());
         } else {
             super.execute();
         }
@@ -102,146 +114,149 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @since 1.5
      */
     @Override
+    @SuppressFBWarnings("EXS_EXCEPTION_SOFTENING_NO_CHECKED")
     protected List<String> executeConstructProcessCommandList() {
-        final List<String> args = new ArrayList<>(50);
-
-        if (project_ != null) {
-            // java
-            args.add(javaTool());
-
-            var jarList = getJarList(project_.libBldDirectory(), "^.*dokka-cli.*\\.jar$");
-            if (!jarList.isEmpty()) {
-                // class path
-                args.add("-cp");
-                args.add(jarList.stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
+        if (project_ == null || outputFormat_ == null || sourceSet_ == null) {
+            if (!silent() && logger.isLoggable(Level.WARNING)) {
+                logger.warning("Missing required fields: project=" + project_ + ", outputFormat=" + outputFormat_
+                        + ", sourceSet=" + sourceSet_);
             }
+            return Collections.emptyList();
+        }
 
-            // main class
-            args.add("org.jetbrains.dokka.MainKt");
+        var args = new ArrayList<String>(50);
 
-            // -pluginClasspath
-            var classPath = new ArrayList<>(pluginsClasspath_);
-            if (outputFormat_ != null) {
-                switch (outputFormat_) {
-                    case HTML -> classPath.addAll(getJarList(project_.libBldDirectory(), HTML_PLUGIN_REGEXP));
-                    case MARKDOWN -> classPath.addAll(getJarList(project_.libBldDirectory(), GFM_PLUGIN_REGEXP));
-                    case JEKYLL -> classPath.addAll(getJarList(project_.libBldDirectory(), JEKYLL_PLUGIN_REGEXP));
-                    default -> classPath.addAll(getJarList(project_.libBldDirectory(), JAVADOC_PLUGIN_REGEXP));
-                }
-            }
-            if (!classPath.isEmpty()) {
-                args.add("-pluginsClasspath");
-                args.add(classPath.stream().map(File::getAbsolutePath).collect(Collectors.joining(SEMICOLON)));
-            } else if (LOGGER.isLoggable(Level.SEVERE) && !silent()) {
-                LOGGER.severe("No valid plugins jars found or specified.");
-            }
+        // java
+        args.add(javaTool());
 
-            // -sourceSet
-            var sourceSetArgs = sourceSet_.args();
-            if (sourceSetArgs.isEmpty()) {
-                throw new IllegalArgumentException("At least one sourceSet is required.");
-            } else {
-                args.add("-sourceSet");
-                args.add(String.join(" ", sourceSet_.args()));
-            }
+        var jarList = getJarList(project_.libBldDirectory(), "^.*dokka-cli.*\\.jar$");
+        if (!jarList.isEmpty()) {
+            // class path
+            args.add("-cp");
+            args.add(jarList.stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
+        }
 
-            // -outputDir
-            if (outputDir_ != null) {
-                if (!IOTools.mkdirs(outputDir_)) {
-                    throw new IllegalArgumentException("Could not create: " + outputDir_.getAbsolutePath());
-                }
+        // main class
+        args.add("org.jetbrains.dokka.MainKt");
 
+        // -pluginClasspath
+        var classPath = new ArrayList<>(pluginsClasspath_);
+        switch (outputFormat_) {
+            case HTML -> classPath.addAll(getJarList(project_.libBldDirectory(), HTML_PLUGIN_REGEXP));
+            case MARKDOWN -> classPath.addAll(getJarList(project_.libBldDirectory(), GFM_PLUGIN_REGEXP));
+            case JEKYLL -> classPath.addAll(getJarList(project_.libBldDirectory(), JEKYLL_PLUGIN_REGEXP));
+            default -> classPath.addAll(getJarList(project_.libBldDirectory(), JAVADOC_PLUGIN_REGEXP));
+        }
+        if (!classPath.isEmpty()) {
+            args.add("-pluginsClasspath");
+            args.add(classPath.stream().map(File::getAbsolutePath).collect(Collectors.joining(DOKKA_LIST_SEPARATOR)));
+        } else if (logger.isLoggable(Level.SEVERE) && !silent()) {
+            logger.severe("No valid plugins jars found or specified.");
+        }
+
+        // -sourceSet
+        var sourceSetArgs = sourceSet_.args();
+        if (sourceSetArgs.isEmpty()) {
+            throw new IllegalArgumentException("At least one sourceSet is required.");
+        } else {
+            args.add("-sourceSet");
+            args.add(String.join(" ", sourceSetArgs));
+        }
+
+        // -outputDir
+        try {
+            if (IOTools.createDirs(outputDir_)) { // false if null or empty output directory
                 args.add("-outputDir");
                 args.add(outputDir_.getAbsolutePath());
             }
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not create output directory: " + outputDir_, e);
+        }
 
-            // -delayTemplateSubstitution
-            if (delayTemplateSubstitution_) {
-                args.add("-delayTemplateSubstitution");
-            }
+        // -delayTemplateSubstitution
+        if (delayTemplateSubstitution_) {
+            args.add("-delayTemplateSubstitution");
+        }
 
-            // -failOnWarning
-            if (failOnWarning_) {
-                args.add("-failOnWarning");
-            }
+        // -failOnWarning
+        if (failOnWarning_) {
+            args.add("-failOnWarning");
+        }
 
-            // -globalLinks
-            if (!globalLinks_.isEmpty()) {
-                args.add("-globalLinks");
-                var links = new ArrayList<String>();
-                globalLinks_.forEach((k, v) ->
-                        links.add(String.format("%s^%s", k, v)));
-                args.add(String.join("^^", links));
-            }
+        // -globalLinks
+        if (!globalLinks_.isEmpty()) {
+            args.add("-globalLinks");
+            var links = new ArrayList<String>();
+            globalLinks_.forEach((k, v) -> links.add(String.format("%s^%s", k, v)));
+            args.add(String.join("^^", links));
+        }
 
-            // -globalPackageOptions
-            if (!globalPackageOptions_.isEmpty()) {
-                args.add("-globalPackageOptions");
-                args.add(String.join(SEMICOLON, globalPackageOptions_));
-            }
+        // -globalPackageOptions
+        if (!globalPackageOptions_.isEmpty()) {
+            args.add("-globalPackageOptions");
+            args.add(String.join(DOKKA_LIST_SEPARATOR, globalPackageOptions_));
+        }
 
-            // -globalSrcLinks
-            if (!globalSrcLinks_.isEmpty()) {
-                args.add("-globalSrcLinks");
-                args.add(String.join(SEMICOLON, globalSrcLinks_));
-            }
+        // -globalSrcLinks
+        if (!globalSrcLinks_.isEmpty()) {
+            args.add("-globalSrcLinks");
+            args.add(String.join(DOKKA_LIST_SEPARATOR, globalSrcLinks_));
+        }
 
-            // -includes
-            if (!includes_.isEmpty()) {
-                args.add("-includes");
-                args.add(includes_.stream().map(File::getAbsolutePath).collect(Collectors.joining(SEMICOLON)));
-            }
+        // -includes
+        if (!includes_.isEmpty()) {
+            args.add("-includes");
+            args.add(includes_.stream().map(File::getAbsolutePath).collect(Collectors.joining(DOKKA_LIST_SEPARATOR)));
+        }
 
-            // -loggingLevel
-            if (loggingLevel_ != null) {
-                args.add("-loggingLevel");
-                args.add(loggingLevel_.toValue());
-            }
+        // -loggingLevel
+        if (loggingLevel_ != null) {
+            args.add("-loggingLevel");
+            args.add(loggingLevel_.toValue());
+        }
 
-            // -moduleName
-            if (TextTools.isNotBlank(moduleName_)) {
-                args.add("-moduleName");
-                args.add(moduleName_);
-            }
+        // -moduleName
+        if (TextTools.isNotBlank(moduleName_)) {
+            args.add("-moduleName");
+            args.add(moduleName_);
+        }
 
-            // -moduleVersion
-            if (TextTools.isNotBlank(moduleVersion_)) {
-                args.add("-moduleVersion");
-                args.add(moduleVersion_);
-            }
+        // -moduleVersion
+        if (TextTools.isNotBlank(moduleVersion_)) {
+            args.add("-moduleVersion");
+            args.add(moduleVersion_);
+        }
 
-            // -noSuppressObviousFunctions
-            if (noSuppressObviousFunctions_) {
-                args.add("-noSuppressObviousFunctions");
-            }
+        // -noSuppressObviousFunctions
+        if (noSuppressObviousFunctions_) {
+            args.add("-noSuppressObviousFunctions");
+        }
 
-            // -offlineMode
-            if (offlineMode_) {
-                args.add("-offlineMode");
-            }
+        // -offlineMode
+        if (offlineMode_) {
+            args.add("-offlineMode");
+        }
 
-            // -pluginConfiguration
-            if (!pluginsConfiguration_.isEmpty()) {
-                args.add("-pluginsConfiguration");
-                var confs = new ArrayList<String>();
-                pluginsConfiguration_.forEach((k, v) ->
-                        confs.add(String.format("%s=%s", encodeJson(k), encodeJson(v))));
-                args.add(String.join("^^", confs));
-            }
+        // -pluginsConfiguration
+        if (!pluginsConfiguration_.isEmpty()) {
+            args.add("-pluginsConfiguration");
+            var confs = new ArrayList<String>();
+            pluginsConfiguration_.forEach((k, v) -> confs.add(k + "=" + v));
+            args.add(String.join("^^", confs));
+        }
 
-            // -suppressInheritedMembers
-            if (suppressInheritedMembers_) {
-                args.add("-suppressInheritedMembers");
-            }
+        // -suppressInheritedMembers
+        if (suppressInheritedMembers_) {
+            args.add("-suppressInheritedMembers");
+        }
 
-            // json
-            if (json_ != null) {
-                args.add(json_.getAbsolutePath());
-            }
+        // json
+        if (json_ != null) {
+            args.add(json_.getAbsolutePath());
+        }
 
-            if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine(String.join(" ", args));
-            }
+        if (logger.isLoggable(Level.FINE)) {
+            logger.fine(String.join(" ", args));
         }
 
         return args;
@@ -251,55 +266,59 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * Configures the operation from a {@link BaseProject}.
      * <p>
      * Sets the {@link #sourceSet sourceSet}, {@link SourceSet#jdkVersion jdkVersion}, {@link #moduleName moduleName}
-     * and {@link SourceSet#classpath(File...) classpath} from the project.
+     * and {@link SourceSet#classpath(File...) classpath} from the project, if not already set.
      *
      * @param project the project to configure the operation from
      */
     @Override
-    @SuppressFBWarnings("EI_EXPOSE_REP2")
-    public DokkaOperation fromProject(BaseProject project) {
-        project_ = project;
-        sourceSet_ = new SourceSet(silent())
-                .src(new File(project.srcMainDirectory(), "kotlin"))
-                .classpath(project.compileClasspathJars())
-                .classpath(project.providedClasspathJars());
+    @SuppressFBWarnings("PRMC_POSSIBLY_REDUNDANT_METHOD_CALLS")
+    public DokkaOperation fromProject(@NonNull BaseProject project) {
+        project_ = ObjectTools.requireNonNull(project, "fromProject");
+        if (sourceSet_ == null) {
+            sourceSet_ = new SourceSet().src(new File(project.srcMainDirectory(), "kotlin"));
+            if (!project.compileClasspathJars().isEmpty()) {
+                sourceSet_.classpath(project.compileClasspathJars());
+            }
+            if (!project.providedClasspathJars().isEmpty()) {
+                sourceSet_.classpath(project.providedClasspathJars());
+            }
+        }
         if (project.javaRelease() != null) {
             sourceSet_ = sourceSet_.jdkVersion(project.javaRelease());
         }
-        moduleName_ = project.name();
-        return this;
-    }
-
-    // Encodes to JSON adding braces as needed
-    private static String encodeJson(final String json) {
-        var sb = new StringBuilder(json);
-        if (!json.startsWith("{") || !json.endsWith("}")) {
-            sb.insert(0, "{").append('}');
+        if (moduleName_ == null) {
+            moduleName_ = project.name();
         }
-        return StringUtils.encodeJson(sb.toString());
+        return this;
     }
 
     /**
      * Returns the JARs contained in a given directory.
      * <p>
      * Sources and Javadoc JARs are ignored.
+     * <p>
+     * Package-private to allow direct unit testing without subclassing.
      *
      * @param directory the directory
      * @param regex     the regular expression to match
      * @return the Java Archives
      */
-    public static List<File> getJarList(File directory, String regex) {
+    static List<File> getJarList(@NonNull File directory, @NonNull String regex) {
         var jars = new ArrayList<File>();
 
         if (directory.isDirectory()) {
             var files = directory.listFiles();
             if (files != null) {
                 for (var f : files) {
-                    if (!f.getName().endsWith("-sources.jar") && (!f.getName().endsWith("-javadoc.jar")) &&
-                            f.getName().matches(regex)) {
+                    if (!f.getName().endsWith("-sources.jar")
+                            && !f.getName().endsWith("-javadoc.jar")
+                            && !f.getName().contains("-test")
+                            && !f.getName().contains("-kjs")
+                            && f.getName().matches(regex)) {
                         jars.add(f);
                     }
                 }
+                jars.sort(Comparator.comparing(File::getName));
             }
         }
 
@@ -351,11 +370,13 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param url            the external documentation URL
      * @param packageListUrl the external documentation package list URL
      * @return this operation instance
+     * @throws NullPointerException     if {@code url} or {@code packageListUrl} are {@code null}
+     * @throws IllegalArgumentException if {@code url} or {@code packageListUrl} are empty
      */
-    public DokkaOperation globalLinks(String url, String packageListUrl) {
-        if (TextTools.isNotBlank(url, packageListUrl)) {
-            globalLinks_.put(url, packageListUrl);
-        }
+    public DokkaOperation globalLinks(@NonNull String url, @NonNull String packageListUrl) {
+        ObjectTools.requireNotEmpty(url, "globalLinks url");
+        ObjectTools.requireNotEmpty(packageListUrl, "globalLinks packageListUrl");
+        globalLinks_.put(url, packageListUrl);
         return this;
     }
 
@@ -364,12 +385,13 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param globalLinks the map of global links
      * @return this operation instance
+     * @throws NullPointerException     if {@code globalLinks} is {@code null}
+     * @throws IllegalArgumentException If {@code globalLinks} is empty
      * @see #globalSrcLink(String...) #globalSrcLink(String...)#globalSrcLink(String...)
      */
-    public DokkaOperation globalLinks(Map<String, String> globalLinks) {
-        if (ObjectTools.isNotEmpty(globalLinks)) {
-            globalLinks_.putAll(globalLinks);
-        }
+    public DokkaOperation globalLinks(@NonNull Map<String, String> globalLinks) {
+        ObjectTools.requireNotEmpty(globalLinks, "globalLinks");
+        globalLinks_.putAll(globalLinks);
         return this;
     }
 
@@ -389,9 +411,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param options one or more package configurations
      * @return this operation instance
+     * @throws NullPointerException     if {@code options} is {@code null} or contain {@code null} elements
+     * @throws IllegalArgumentException if {@code options} is empty or contains empty elements
      */
-    public DokkaOperation globalPackageOptions(String... options) {
-        globalPackageOptions_.addAll(CollectionTools.combine(options));
+    public DokkaOperation globalPackageOptions(@NonNull String... options) {
+        ObjectTools.requireNotEmpty(options, "globalPackageOptions");
+        globalPackageOptions_.addAll(List.of(options));
         return this;
     }
 
@@ -411,10 +436,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param options the package configurations
      * @return this operation instance
+     * @throws NullPointerException     if {@code options} is {@code null} or contain {@code null} elements
+     * @throws IllegalArgumentException if {@code options} is empty or contains empty elements
      */
-    @SafeVarargs
-    public final DokkaOperation globalPackageOptions(Collection<String>... options) {
-        globalPackageOptions_.addAll(CollectionTools.combine(options));
+    public final DokkaOperation globalPackageOptions(@NonNull Collection<String> options) {
+        ObjectTools.requireNotEmpty(options, "globalPackageOptions");
+        globalPackageOptions_.addAll(options);
         return this;
     }
 
@@ -433,9 +460,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param links one or more links mapping
      * @return this operation instance
+     * @throws NullPointerException     if {@code links} is null
+     * @throws IllegalArgumentException if {@code links} is empty or contains {@code null} or empty elements
      */
-    public DokkaOperation globalSrcLink(String... links) {
-        globalSrcLinks_.addAll(CollectionTools.combine(links));
+    public DokkaOperation globalSrcLink(@NonNull String... links) {
+        ObjectTools.requireNotEmpty(links, "globalSrcLink");
+        globalSrcLinks_.addAll(List.of(links));
         return this;
     }
 
@@ -444,10 +474,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param links the links mapping
      * @return this operation instance
+     * @throws NullPointerException     if {@code links} is null
+     * @throws IllegalArgumentException if {@code links} is empty or contains {@code null} or empty elements
      */
-    @SafeVarargs
-    public final DokkaOperation globalSrcLink(Collection<String>... links) {
-        globalSrcLinks_.addAll(CollectionTools.combine(links));
+    public final DokkaOperation globalSrcLink(@NonNull Collection<String> links) {
+        ObjectTools.requireNotEmpty(links, "globalSrcLink");
+        globalSrcLinks_.addAll(links);
         return this;
     }
 
@@ -470,10 +502,13 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param files one or more files
      * @return this operation instance
-     * @see #includes(Collection...)
+     * @throws NullPointerException     if {@code includes} is {@code null}
+     * @throws IllegalArgumentException If {@code includes} is empty
+     * @see #includes(Collection)
      */
-    public DokkaOperation includes(File... files) {
-        includes_.addAll(CollectionTools.combine(files));
+    public DokkaOperation includes(@NonNull File... files) {
+        ObjectTools.requireNotEmpty(files, INCLUDES);
+        includes_.addAll(List.of(files));
         return this;
     }
 
@@ -486,11 +521,13 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param files the Markdown files
      * @return this operation instance
+     * @throws NullPointerException     if {@code files} is {@code null}
+     * @throws IllegalArgumentException If {@code files} is empty
      * @see #includes(File...)
      */
-    @SafeVarargs
-    public final DokkaOperation includes(Collection<File>... files) {
-        includes_.addAll(CollectionTools.combine(files));
+    public final DokkaOperation includes(@NonNull Collection<File> files) {
+        ObjectTools.requireNotEmpty(files, INCLUDES);
+        includes_.addAll(files);
         return this;
     }
 
@@ -503,9 +540,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param files one or more files
      * @return this operation instance
-     * @see #includesStrings(Collection...)
+     * @throws NullPointerException     if {@code files} is {@code null} or contain {@code null} elements
+     * @throws IllegalArgumentException if {@code files} is empty or contains empty elements
+     * @see #includesStrings(Collection)
      */
-    public DokkaOperation includes(String... files) {
+    public DokkaOperation includes(@NonNull String... files) {
+        ObjectTools.requireNotEmpty(files, INCLUDES);
         includes_.addAll(CollectionTools.combineStringsToFiles(files));
         return this;
     }
@@ -519,9 +559,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param files one or more files
      * @return this operation instance
-     * @see #includesPaths(Collection...)
+     * @throws NullPointerException     if {@code files} is {@code null}
+     * @throws IllegalArgumentException If {@code files} is empty
+     * @see #includesPaths(Collection)
      */
-    public DokkaOperation includes(Path... files) {
+    public DokkaOperation includes(@NonNull Path... files) {
+        ObjectTools.requireNotEmpty(files, INCLUDES);
         includes_.addAll(CollectionTools.combinePathsToFiles(files));
         return this;
     }
@@ -545,10 +588,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param files the Markdown files
      * @return this operation instance
+     * @throws NullPointerException     if {@code files} is {@code null}
+     * @throws IllegalArgumentException If {@code files} is empty
      * @see #includes(Path...)
      */
-    @SafeVarargs
-    public final DokkaOperation includesPaths(Collection<Path>... files) {
+    public final DokkaOperation includesPaths(@NonNull Collection<Path> files) {
+        ObjectTools.requireNotEmpty(files, INCLUDES);
         includes_.addAll(CollectionTools.combinePathsToFiles(files));
         return this;
     }
@@ -562,10 +607,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param files the Markdown files
      * @return this operation instance
+     * @throws NullPointerException     if {@code files} is {@code null} or contain {@code null} elements
+     * @throws IllegalArgumentException if {@code files} is empty or contains empty elements
      * @see #includes(String...)
      */
-    @SafeVarargs
-    public final DokkaOperation includesStrings(Collection<String>... files) {
+    public final DokkaOperation includesStrings(@NonNull Collection<String> files) {
+        ObjectTools.requireNotEmpty(files, INCLUDES);
         includes_.addAll(CollectionTools.combineStringsToFiles(files));
         return this;
     }
@@ -574,18 +621,24 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * JSON configuration file path.
      *
      * @param configuration the configuration file path
+     * @return this operation instance
+     * @throws NullPointerException if {@code configuration} is {@code null}
      */
-    public DokkaOperation json(Path configuration) {
-        return json(configuration.toFile());
+    public DokkaOperation json(@NonNull Path configuration) {
+        ObjectTools.requireNonNull(configuration, "json");
+        json_ = configuration.toFile();
+        return this;
     }
 
     /**
      * JSON configuration file path.
      *
      * @param configuration the configuration file path
+     * @return this operation instance
+     * @throws NullPointerException if {@code configuration} is {@code null}
      */
-    public DokkaOperation json(File configuration) {
-        json_ = configuration;
+    public DokkaOperation json(@NonNull File configuration) {
+        json_ = ObjectTools.requireNonNull(configuration, "json");
         return this;
     }
 
@@ -602,10 +655,15 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * JSON configuration file path.
      *
      * @param configuration the configuration file path
+     * @return this operation instance
+     * @throws NullPointerException     if {@code configuration} is {@code null}
+     * @throws IllegalArgumentException if {@code configuration} is empty
      */
     @SuppressFBWarnings(value = "PATH_TRAVERSAL_IN", justification = "caller controls the input")
-    public DokkaOperation json(String configuration) {
-        return json(new File(configuration));
+    public DokkaOperation json(@NonNull String configuration) {
+        ObjectTools.requireNotEmpty(configuration, "json");
+        json_ = new File(configuration);
+        return this;
     }
 
     /**
@@ -613,9 +671,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param loggingLevel the logging level
      * @return this operation instance
+     * @throws NullPointerException if {@code loggingLevel} is {@code null}
      */
-    public DokkaOperation loggingLevel(LoggingLevel loggingLevel) {
-        loggingLevel_ = loggingLevel;
+    public DokkaOperation loggingLevel(@NonNull LoggingLevel loggingLevel) {
+        loggingLevel_ = ObjectTools.requireNonNull(loggingLevel, "loggingLevel");
         return this;
     }
 
@@ -626,9 +685,11 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param moduleName the project/module name
      * @return this operation instance
+     * @throws NullPointerException     if {@code moduleName} is {@code null}
+     * @throws IllegalArgumentException if {@code moduleName} is empty
      */
-    public DokkaOperation moduleName(String moduleName) {
-        moduleName_ = moduleName;
+    public DokkaOperation moduleName(@NonNull String moduleName) {
+        moduleName_ = ObjectTools.requireNotEmpty(moduleName, "moduleName");
         return this;
     }
 
@@ -637,9 +698,11 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param version the version
      * @return this operation instance
+     * @throws NullPointerException     if {@code version} is {@code null}
+     * @throws IllegalArgumentException if {@code version} is empty
      */
-    public DokkaOperation moduleVersion(String version) {
-        moduleVersion_ = version;
+    public DokkaOperation moduleVersion(@NonNull String version) {
+        moduleVersion_ = ObjectTools.requireNotEmpty(version, "moduleVersion");
         return this;
     }
 
@@ -701,22 +764,13 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param outputDir the output directory
      * @return this operation instance
+     * @throws NullPointerException     if {@code outputDir} is {@code null}
+     * @throws IllegalArgumentException if {@code outputDir} is empty
      */
     @SuppressFBWarnings(value = "PATH_TRAVERSAL_IN", justification = "caller controls the input")
-    public DokkaOperation outputDir(String outputDir) {
-        return outputDir(new File(outputDir));
-    }
-
-    /**
-     * Sets the output directory path, {@code ./dokka} by default.
-     * <p>
-     * The directory to where documentation is generated, regardless of output format.
-     *
-     * @param outputDir the output directory
-     * @return this operation instance
-     */
-    public DokkaOperation outputDir(File outputDir) {
-        outputDir_ = outputDir;
+    public DokkaOperation outputDir(@NonNull String outputDir) {
+        ObjectTools.requireNotEmpty(outputDir, "outputDir");
+        outputDir_ = new File(outputDir);
         return this;
     }
 
@@ -727,9 +781,26 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param outputDir the output directory
      * @return this operation instance
+     * @throws NullPointerException if {@code outputDir} is {@code null}
      */
-    public DokkaOperation outputDir(Path outputDir) {
-        return outputDir(outputDir.toFile());
+    public DokkaOperation outputDir(@NonNull File outputDir) {
+        outputDir_ = ObjectTools.requireNonNull(outputDir, "outputDir");
+        return this;
+    }
+
+    /**
+     * Sets the output directory path, {@code ./dokka} by default.
+     * <p>
+     * The directory to where documentation is generated, regardless of output format.
+     *
+     * @param outputDir the output directory
+     * @return this operation instance
+     * @throws NullPointerException if {@code outputDir} is {@code null}
+     */
+    public DokkaOperation outputDir(@NonNull Path outputDir) {
+        ObjectTools.requireNonNull(outputDir, "outputDir");
+        outputDir_ = outputDir.toFile();
+        return this;
     }
 
     /**
@@ -746,13 +817,11 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param format The {@link OutputFormat output format}
      * @return this operation instance
+     * @throws NullPointerException if {@code format} is {@code null}
      */
-    public DokkaOperation outputFormat(OutputFormat format) {
-        if (format != null) {
-            outputFormat_ = format;
-        } else if (LOGGER.isLoggable(Level.WARNING) && !silent()) {
-            LOGGER.warning("No valid output format specified.");
-        }
+    public DokkaOperation outputFormat(@NonNull OutputFormat format) {
+        ObjectTools.requireNonNull(format, "outputFormat");
+        outputFormat_ = format;
         return this;
     }
 
@@ -762,13 +831,13 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param name              The fully qualified plugin name
      * @param jsonConfiguration The plugin JSON configuration
      * @return this operation instance
+     * @throws NullPointerException     if {@code name} or {@code jsonConfiguration} are {@code null}
+     * @throws IllegalArgumentException if {@code name} or {@code jsonConfiguration} are empty
      */
-    public DokkaOperation pluginConfigurations(String name, String jsonConfiguration) {
-        if (TextTools.isNotBlank(name, jsonConfiguration)) {
-            pluginsConfiguration_.put(name, jsonConfiguration);
-        } else if (LOGGER.isLoggable(Level.WARNING) && !silent()) {
-            LOGGER.warning("A plugin name and configuration are required.");
-        }
+    public DokkaOperation pluginConfigurations(@NonNull String name, @NonNull String jsonConfiguration) {
+        ObjectTools.requireNotEmpty(name, "pluginConfigurations name");
+        ObjectTools.requireNotEmpty(jsonConfiguration, "pluginConfigurations jsonConfiguration");
+        pluginsConfiguration_.put(name, jsonConfiguration);
         return this;
     }
 
@@ -777,12 +846,13 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param pluginConfigurations the map of configurations
      * @return this operation instance
+     * @throws NullPointerException     if {@code pluginConfigurations} is {@code null}
+     * @throws IllegalArgumentException If {@code pluginConfigurations} is empty
      * @see #pluginConfigurations(String, String)
      */
-    public DokkaOperation pluginConfigurations(Map<String, String> pluginConfigurations) {
-        if (ObjectTools.isNotEmpty(pluginConfigurations)) {
-            pluginsConfiguration_.putAll(pluginConfigurations);
-        }
+    public DokkaOperation pluginConfigurations(@NonNull Map<String, String> pluginConfigurations) {
+        ObjectTools.requireNonNull(pluginConfigurations, "pluginConfigurations");
+        pluginsConfiguration_.putAll(pluginConfigurations);
         return this;
     }
 
@@ -791,7 +861,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @return the plugin configurations.
      */
-    @SuppressFBWarnings("EI_EXPOSE_REP")
     public Map<String, String> pluginConfigurations() {
         return pluginsConfiguration_;
     }
@@ -801,10 +870,13 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param jars one or more jars
      * @return this operation instance
-     * @see #includes(Collection...)
+     * @throws NullPointerException     if {@code jars} is {@code null}
+     * @throws IllegalArgumentException If {@code jars} is empty
+     * @see #pluginsClasspath(Collection)
      */
-    public DokkaOperation pluginsClasspath(File... jars) {
-        pluginsClasspath_.addAll(CollectionTools.combine(jars));
+    public DokkaOperation pluginsClasspath(@NonNull File... jars) {
+        ObjectTools.requireNotEmpty(jars, PLUGINS_CLASSPATH);
+        pluginsClasspath_.addAll(List.of(jars));
         return this;
     }
 
@@ -813,11 +885,13 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param jars the jars
      * @return this operation instance
-     * @see #pluginsClasspath(Collection...)
+     * @throws NullPointerException     if {@code jars} is {@code null}
+     * @throws IllegalArgumentException If {@code jars} is empty
+     * @see #pluginsClasspath(Collection)
      */
-    @SafeVarargs
-    public final DokkaOperation pluginsClasspath(Collection<File>... jars) {
-        pluginsClasspath_.addAll(CollectionTools.combine(jars));
+    public final DokkaOperation pluginsClasspath(@NonNull Collection<File> jars) {
+        ObjectTools.requireNotEmpty(jars, PLUGINS_CLASSPATH);
+        pluginsClasspath_.addAll(jars);
         return this;
     }
 
@@ -826,9 +900,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param jars one or more jars
      * @return this operation instance
-     * @see #pluginsClasspathStrings(Collection...)
+     * @throws NullPointerException     if {@code jars} is {@code null} or contain {@code null} elements
+     * @throws IllegalArgumentException if {@code jars} is empty or contains empty elements
+     * @see #pluginsClasspathStrings(Collection)
      */
-    public DokkaOperation pluginsClasspath(String... jars) {
+    public DokkaOperation pluginsClasspath(@NonNull String... jars) {
+        ObjectTools.requireNotEmpty(jars, PLUGINS_CLASSPATH);
         pluginsClasspath_.addAll(CollectionTools.combineStringsToFiles(jars));
         return this;
     }
@@ -838,9 +915,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param jars one or more jars
      * @return this operation instance
-     * @see #pluginsClasspathPaths(Collection...)
+     * @throws NullPointerException     if {@code jars} is {@code null} or contain {@code null} elements
+     * @throws IllegalArgumentException if {@code jars} is empty or contains empty elements
+     * @see #pluginsClasspathPaths(Collection)
      */
-    public DokkaOperation pluginsClasspath(Path... jars) {
+    public DokkaOperation pluginsClasspath(@NonNull Path... jars) {
+        ObjectTools.requireNotEmpty(jars, PLUGINS_CLASSPATH);
         pluginsClasspath_.addAll(CollectionTools.combinePathsToFiles(jars));
         return this;
     }
@@ -860,10 +940,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param jars the jars
      * @return this operation instance
+     * @throws NullPointerException     if {@code jars} is {@code null}
+     * @throws IllegalArgumentException If {@code jars} is empty
      * @see #pluginsClasspath(Path...)
      */
-    @SafeVarargs
-    public final DokkaOperation pluginsClasspathPaths(Collection<Path>... jars) {
+    public final DokkaOperation pluginsClasspathPaths(@NonNull Collection<Path> jars) {
+        ObjectTools.requireNotEmpty(jars, "pluginsClasspathPaths");
         pluginsClasspath_.addAll(CollectionTools.combinePathsToFiles(jars));
         return this;
     }
@@ -873,13 +955,14 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param jars the jars
      * @return this operation instance
+     * @throws NullPointerException     if {@code jars} is {@code null}
+     * @throws IllegalArgumentException If {@code jars} is empty
      * @see #pluginsClasspath(String...)
      */
-    @SafeVarargs
-    public final DokkaOperation pluginsClasspathStrings(Collection<String>... jars) {
+    public final DokkaOperation pluginsClasspathStrings(@NonNull Collection<String> jars) {
+        ObjectTools.requireNotEmpty(jars, "pluginsClasspathStrings");
         pluginsClasspath_.addAll(CollectionTools.combineStringsToFiles(jars));
         return this;
-
     }
 
     /**
@@ -889,9 +972,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param sourceSet the source set configurations
      * @return this operation instance
+     * @throws NullPointerException if {@code sourceSet} is {@code null}
      */
-    public DokkaOperation sourceSet(SourceSet sourceSet) {
-        sourceSet_ = sourceSet;
+    public DokkaOperation sourceSet(@NonNull SourceSet sourceSet) {
+        sourceSet_ = ObjectTools.requireNonNull(sourceSet, "sourceSet");
         return this;
     }
 

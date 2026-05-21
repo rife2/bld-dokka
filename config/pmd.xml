@@ -53,6 +53,7 @@
         <exclude name="AvoidUncheckedExceptionsInSignatures"/>
         <exclude name="CognitiveComplexity"/>
         <exclude name="CyclomaticComplexity"/>
+        <exclude name="ExcessiveImports"/>
         <exclude name="ExcessiveParameterList"/>
         <exclude name="ExcessivePublicCount"/>
         <exclude name="GodClass"/>
@@ -98,6 +99,7 @@
 
     <!-- MULTITHREADING -->
     <rule ref="category/java/multithreading.xml">
+        <exclude name="UseConcurrentHashMap"/>
     </rule>
 
     <!-- PERFORMANCE -->

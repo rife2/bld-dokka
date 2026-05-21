@@ -35,7 +35,7 @@ public class DokkaOperationBuild extends Project {
     public DokkaOperationBuild() {
         pkg = "rife.bld.extension";
         name = "bld-dokka";
-        version = version(1, 1, 0);
+        version = version(1, 2, 0, "SNAPSHOT");
 
         javaRelease = 17;
 
@@ -54,7 +54,7 @@ public class DokkaOperationBuild extends Project {
                 .include(dependency("org.jetbrains.dokka", "gfm-plugin", dokka))
                 .include(dependency("org.jetbrains.dokka", "jekyll-plugin", dokka))
                 .include(dependency("com.uwyn.rife2", "bld-extensions-tools",
-                        version(0, 9, 1, "SNAPSHOT")))
+                        version(1, 3, 0, "SNAPSHOT")))
                 .include(dependency("com.uwyn.rife2", "bld",
                         version(2, 3, 1, "SNAPSHOT")));
         scope(provided)
@@ -62,7 +62,7 @@ public class DokkaOperationBuild extends Project {
                         version(4, 9, 8)));
         scope(test)
                 .include(dependency("com.uwyn.rife2", "bld-extensions-testing-helpers",
-                        version(0, 9, 6)))
+                        version(1, 1, 0, "SNAPSHOT")))
                 .include(dependency("org.junit.jupiter", "junit-jupiter", junit))
                 .include(dependency("org.junit.platform", "junit-platform-console-standalone", junit))
                 .include(dependency("org.assertj", "assertj-core",
@@ -72,7 +72,8 @@ public class DokkaOperationBuild extends Project {
                 .javadocOptions()
                 .author()
                 .docLint(NO_MISSING)
-                .link("https://rife2.github.io/bld/");
+                .link("https://rife2.github.io/bld/")
+                .link("https://findbugs.sourceforge.net/api/");
 
         publishOperation()
                 .repository(version.isSnapshot() ? repository("rife2-snapshot") : repository("rife2"))
@@ -122,9 +123,9 @@ public class DokkaOperationBuild extends Project {
     @BuildCommand(summary = "Runs PMD analysis")
     public void pmd() throws Exception {
         new PmdOperation()
-                .fromProject(this)
                 .failOnViolation(true)
                 .ruleSets("config/pmd.xml")
+                .fromProject(this)
                 .execute();
     }
 

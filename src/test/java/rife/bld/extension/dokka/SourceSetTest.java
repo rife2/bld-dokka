@@ -22,7 +22,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EmptySource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import rife.bld.extension.testing.LoggingExtension;
 import rife.bld.extension.testing.TestLogHandler;
@@ -32,14 +34,19 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
+import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static rife.bld.extension.TestUtils.localPath;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class SourceSetTest {
 
     private static final String CLASSPATH_1 = "classpath1";
@@ -66,20 +73,12 @@ class SourceSetTest {
     private static final String SUP_2 = "sup2";
     private static final String SUP_3 = "sup3";
     private static final TestLogHandler TEST_LOG_HANDLER = new TestLogHandler();
-
     @RegisterExtension
     @SuppressWarnings("unused")
     private static final LoggingExtension LOGGING_EXTENSION = new LoggingExtension(
             LOGGER,
             TEST_LOG_HANDLER
     );
-
-    @ParameterizedTest
-    @ValueSource(strings = {"1.8", "19", "22"})
-    void jdkVersion(String version) {
-        var args = new SourceSet().jdkVersion(version);
-        assertThat(args.jdkVersion()).isEqualTo(version);
-    }
 
     @Test
     void sourceSet() throws IOException {
@@ -166,10 +165,9 @@ class SourceSetTest {
                 "-samples", localPath(SAMPLES_1, SAMPLES_2),
                 "-skipDeprecated",
                 "-src", localPath(SRC_1, SRC_2, SRC_3, SRC_4),
-                "-srcLink", localPath(PATH_2) + "=remote2#suffix2;" + localPath(PATH_3) + "=remote3#suffix3;" +
-                        "path1=remote1#suffix1",
+                "-srcLink", "path1=remote1#suffix1" + ';' + localPath(PATH_2) + "=remote2#suffix2;" + localPath(PATH_3)
+                        + "=remote3#suffix3",
                 "-sourceSetName", "setName",
-
                 "-suppressedFiles", localPath(SUP_1, SUP_2));
 
         assertThat(params).hasSize(matches.size());
@@ -183,10 +181,17 @@ class SourceSetTest {
 
     @Test
     void sourceSetCollections() {
+        var deps = new LinkedHashMap<String, String>();
+        deps.put("set1", "set2");
+        deps.put("set3", "set4");
+        var links = new LinkedHashMap<String, String>();
+        links.put("link1", "link2");
+        links.put("link3", "link4");
+
         var args = new SourceSet()
                 .classpath(List.of(new File(PATH_1), new File(PATH_2)))
-                .dependentSourceSets(Map.of("set1", "set2", "set3", "set4"))
-                .externalDocumentationLinks(Map.of("link1", "link2", "link3", "link4"))
+                .dependentSourceSets(deps)
+                .externalDocumentationLinks(links)
                 .perPackageOptions(List.of(OPTION_1, OPTION_2))
                 .samples(List.of(new File(SAMPLES_1)))
                 .samples(new File(SAMPLES_2))
@@ -214,6 +219,22 @@ class SourceSetTest {
     void sourceSetIntVersions() {
         var args = new SourceSet().apiVersion(1).languageVersion(2);
         assertThat(args.args()).containsExactly("-apiVersion", "1", "-languageVersion", "2");
+    }
+
+    @Test
+    void srcLinkNormalization() {
+        var ss = new SourceSet()
+                .srcLink("src1", "https://github.com/org/repo/blob/main", "#L10")
+                .srcLink("src2", "https://github.com/org/repo/blob/main#", "#L20")
+                .srcLink("src3", "https://github.com/org/repo/blob/main", "L30")
+                .srcLink("src4", "https://github.com/org/repo/blob/main#", "L40");
+
+        assertThat(ss.srcLinks()).containsExactly(
+                entry("src1", "https://github.com/org/repo/blob/main#L10"),
+                entry("src2", "https://github.com/org/repo/blob/main#L20"),
+                entry("src3", "https://github.com/org/repo/blob/main#L30"),
+                entry("src4", "https://github.com/org/repo/blob/main#L40")
+        );
     }
 
     @Nested
@@ -268,31 +289,45 @@ class SourceSetTest {
     class DependentSourceSetsTests {
 
         @ParameterizedTest
-        @NullAndEmptySource
-        void dependentSourceSetsMissingModuleName(String name) {
-            new SourceSet().dependentSourceSets(name, "moduleName");
-            assertThat(TEST_LOG_HANDLER.containsMessage("The module and source set names must be valid.")).isTrue();
+        @EmptySource
+        void dependentSourceEmptyModuleName(String name) {
+            assertThatThrownBy(() -> new SourceSet().dependentSourceSets(name, "sourceSetName"))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
 
         @ParameterizedTest
-        @NullAndEmptySource
-        void dependentSourceSetsMissingSetName(String name) {
-            new SourceSet().dependentSourceSets("moduleName", name);
-            assertThat(TEST_LOG_HANDLER.containsMessage("The module and source set names must be valid.")).isTrue();
+        @NullSource
+        void dependentSourceNullModuleName(String name) {
+            assertThatThrownBy(() -> new SourceSet().dependentSourceSets(name, "sourceSetName"))
+                    .isInstanceOf(NullPointerException.class);
         }
 
         @ParameterizedTest
-        @NullAndEmptySource
-        void dependentSourceSetsNoNames(String name) {
-            new SourceSet().dependentSourceSets(name, name);
-            assertThat(TEST_LOG_HANDLER.containsMessage("The module and source set names must be valid.")).isTrue();
+        @EmptySource
+        void dependentSourceSetsEmptySetName(String name) {
+            assertThatThrownBy(() -> new SourceSet().dependentSourceSets(name, "sourceSetName"))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
 
         @ParameterizedTest
-        @NullAndEmptySource
-        void dependentSourceSetsNoNamesSilent(String name) {
-            new SourceSet(true).dependentSourceSets(name, name);
-            assertThat(TEST_LOG_HANDLER.isEmpty()).isTrue();
+        @EmptySource
+        void dependentSourceSetsEmpyyNames(String name) {
+            assertThatThrownBy(() -> new SourceSet().dependentSourceSets(name, name))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest
+        @NullSource
+        void dependentSourceSetsNullNames(String name) {
+            assertThatThrownBy(() -> new SourceSet().dependentSourceSets(name, name))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @ParameterizedTest
+        @NullSource
+        void dependentSourceSetsNullSetName(String name) {
+            assertThatThrownBy(() -> new SourceSet().dependentSourceSets(name, "sourceSetName"))
+                    .isInstanceOf(NullPointerException.class);
         }
     }
 
@@ -301,31 +336,163 @@ class SourceSetTest {
     class ExternalDocumentationLinksTests {
 
         @ParameterizedTest
-        @NullAndEmptySource
-        void externalDocumentationLinksMissingPackageListUrl(String url) {
-            new SourceSet().externalDocumentationLinks(url, "packageListUrl");
-            assertThat(TEST_LOG_HANDLER.containsMessage("The URL and package list URL must be valid.")).isTrue();
+        @EmptySource
+        void externalDocumentationLinksEmptyNames(String url) {
+            assertThatThrownBy(() -> new SourceSet().externalDocumentationLinks(url, url))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
 
         @ParameterizedTest
-        @NullAndEmptySource
-        void externalDocumentationLinksMissingSetUrl(String url) {
-            new SourceSet().externalDocumentationLinks("packageListUrl", url);
-            assertThat(TEST_LOG_HANDLER.containsMessage("The URL and package list URL must be valid.")).isTrue();
+        @EmptySource
+        void externalDocumentationLinksEmptyPackageListUrl(String url) {
+            assertThatThrownBy(() -> new SourceSet().externalDocumentationLinks(url, "packageListUrl"))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
 
         @ParameterizedTest
-        @NullAndEmptySource
-        void externalDocumentationLinksNoNames(String url) {
-            new SourceSet().externalDocumentationLinks(url, url);
-            assertThat(TEST_LOG_HANDLER.containsMessage("The URL and package list URL must be valid.")).isTrue();
+        @EmptySource
+        void externalDocumentationLinksEmptySetUrl(String url) {
+            assertThatThrownBy(() -> new SourceSet().externalDocumentationLinks("packageListUrl", url))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
 
         @ParameterizedTest
-        @NullAndEmptySource
-        void externalDocumentationLinksNoNamesSilent(String url) {
-            new SourceSet(true).externalDocumentationLinks(url, url);
-            assertThat(TEST_LOG_HANDLER.isEmpty()).isTrue();
+        @NullSource
+        void externalDocumentationLinksNullNames(String url) {
+            assertThatThrownBy(() -> new SourceSet().externalDocumentationLinks(url, url))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @ParameterizedTest
+        @NullSource
+        void externalDocumentationLinksNullPackageListUrl(String url) {
+            assertThatThrownBy(() -> new SourceSet().externalDocumentationLinks(url, "packageListUrl"))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @ParameterizedTest
+        @NullSource
+        void externalDocumentationLinksNullSetUrl(String url) {
+            assertThatThrownBy(() -> new SourceSet().externalDocumentationLinks("packageListUrl", url))
+                    .isInstanceOf(NullPointerException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("Getter Tests")
+    class GetterTests {
+
+        @Test
+        void analysisPlatformGetter() {
+            var ss = new SourceSet();
+            assertThat(ss.analysisPlatform()).isNull();
+            ss.analysisPlatform(AnalysisPlatform.JVM);
+            assertThat(ss.analysisPlatform()).isEqualTo(AnalysisPlatform.JVM);
+        }
+
+        @Test
+        void apiVersionGetter() {
+            var ss = new SourceSet();
+            assertThat(ss.apiVersion()).isNull();
+            ss.apiVersion("1.9");
+            assertThat(ss.apiVersion()).isEqualTo("1.9");
+        }
+
+        @Test
+        void apiVersionIntGetter() {
+            var ss = new SourceSet().apiVersion(2);
+            assertThat(ss.apiVersion()).isEqualTo("2");
+        }
+
+        @Test
+        void displayNameGetter() {
+            var ss = new SourceSet();
+            assertThat(ss.displayName()).isNull();
+            ss.displayName("My Module");
+            assertThat(ss.displayName()).isEqualTo("My Module");
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"1.8", "19", "22"})
+        void jdkVersion(String version) {
+            var args = new SourceSet().jdkVersion(version);
+            assertThat(args.jdkVersion()).isEqualTo(version);
+        }
+
+        @Test
+        void jdkVersionGetter() {
+            var ss = new SourceSet();
+            assertThat(ss.jdkVersion()).isNull();
+            ss.jdkVersion("17");
+            assertThat(ss.jdkVersion()).isEqualTo("17");
+        }
+
+        @Test
+        void jdkVersionIntGetter() {
+            var ss = new SourceSet().jdkVersion(21);
+            assertThat(ss.jdkVersion()).isEqualTo("21");
+        }
+
+        @Test
+        void languageVersionGetter() {
+            var ss = new SourceSet();
+            assertThat(ss.languageVersion()).isNull();
+            ss.languageVersion("1.9");
+            assertThat(ss.languageVersion()).isEqualTo("1.9");
+        }
+
+        @Test
+        void languageVersionIntGetter() {
+            var ss = new SourceSet().languageVersion(2);
+            assertThat(ss.languageVersion()).isEqualTo("2");
+        }
+
+        @Test
+        void noJdkLinkGetter() {
+            var ss = new SourceSet();
+            assertThat(ss.noJdkLink()).isFalse();
+            ss.noJdkLink(true);
+            assertThat(ss.noJdkLink()).isTrue();
+        }
+
+        @Test
+        void noSkipEmptyPackagesGetter() {
+            var ss = new SourceSet();
+            assertThat(ss.noSkipEmptyPackages()).isFalse();
+            ss.noSkipEmptyPackages(true);
+            assertThat(ss.noSkipEmptyPackages()).isTrue();
+        }
+
+        @Test
+        void noStdlibLinkGetter() {
+            var ss = new SourceSet();
+            assertThat(ss.noStdlibLink()).isFalse();
+            ss.noStdlibLink(true);
+            assertThat(ss.noStdlibLink()).isTrue();
+        }
+
+        @Test
+        void reportUndocumentedGetter() {
+            var ss = new SourceSet();
+            assertThat(ss.reportUndocumented()).isFalse();
+            ss.reportUndocumented(true);
+            assertThat(ss.reportUndocumented()).isTrue();
+        }
+
+        @Test
+        void skipDeprecatedGetter() {
+            var ss = new SourceSet();
+            assertThat(ss.skipDeprecated()).isFalse();
+            ss.skipDeprecated(true);
+            assertThat(ss.skipDeprecated()).isTrue();
+        }
+
+        @Test
+        void sourceSetNameGetter() {
+            var ss = new SourceSet();
+            assertThat(ss.sourceSetName()).isNull();
+            ss.sourceSetName("jvmMain");
+            assertThat(ss.sourceSetName()).isEqualTo("jvmMain");
         }
     }
 
@@ -520,6 +687,263 @@ class SourceSetTest {
             var args = new SourceSet();
             args.suppressedFilesStrings(List.of(SAMPLES_1, SAMPLES_2));
             assertThat(args.suppressedFiles()).containsExactly(new File(SAMPLES_1), new File(SAMPLES_2));
+        }
+    }
+
+    @Nested
+    @DisplayName("Validation Tests")
+    @SuppressWarnings({"DataFlowIssue", "RedundantCast"})
+    class ValidationTests {
+
+        @Test
+        void analysisPlatformWithNull() {
+            assertThatThrownBy(() -> new SourceSet().analysisPlatform(null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        void apiVersionWithNullOrEmpty(String arg) {
+            assertThatThrownBy(() -> new SourceSet().apiVersion(arg))
+                    .isInstanceOf(arg == null ? NullPointerException.class : IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest
+        @EmptySource
+        void classPathWithEmpty(String arg) {
+            assertThatThrownBy(() -> new SourceSet().classpath(arg))
+                    .as("varargs with empty element").isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new SourceSet().classpath("foo", arg))
+                    .as("array has empty element").isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new SourceSet().classpathStrings(List.of("foo", arg)))
+                    .as("list has empty element").isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new SourceSet().classpath(new String[0]))
+                    .as("empty array").isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new SourceSet().classpathStrings(List.of()))
+                    .as("empty collection").isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest
+        @NullSource
+        void classPathWithNull(String arg) {
+            assertThatThrownBy(() -> new SourceSet().classpath(arg))
+                    .as("varargs with null element").isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().classpath("foo", arg))
+                    .as("array has null element").isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().classpathStrings(List.of("foo", arg)))
+                    .as("list has null element").isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().classpath((String[]) null))
+                    .as("array is null").isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().classpathStrings((Collection<String>) null))
+                    .as("collection is null").isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().classpath((Path[]) null))
+                    .as("path array is null").isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().classpathPaths((Collection<Path>) null))
+                    .as("path collection is null").isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().classpath((File[]) null))
+                    .as("file array is null").isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().classpath((Collection<File>) null))
+                    .as("file collection is null").isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        void dependentSourceSetsWithNullOrEmpty() {
+            assertThatThrownBy(() -> new SourceSet().dependentSourceSets(null, "main"))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().dependentSourceSets("mod", null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().dependentSourceSets("", "main"))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new SourceSet().dependentSourceSets("mod", ""))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new SourceSet().dependentSourceSets((Map<String, String>) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().dependentSourceSets(Map.of()))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        void displayNameWithNullOrEmpty(String arg) {
+            assertThatThrownBy(() -> new SourceSet().displayName(arg))
+                    .isInstanceOf(arg == null ? NullPointerException.class : IllegalArgumentException.class);
+        }
+
+        @Test
+        void documentedVisibilitiesWithNull() {
+            assertThatThrownBy(() -> new SourceSet().documentedVisibilities((DocumentedVisibility[]) null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        void externalDocumentationLinksWithNullOrEmpty() {
+            assertThatThrownBy(() -> new SourceSet().externalDocumentationLinks(null, "pkg"))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().externalDocumentationLinks("url", null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().externalDocumentationLinks("", "pkg"))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new SourceSet().externalDocumentationLinks("url", ""))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new SourceSet().externalDocumentationLinks((Map<String, String>) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().externalDocumentationLinks(Map.of()))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest
+        @EmptySource
+        void includesWithEmpty(String arg) {
+            assertThatThrownBy(() -> new SourceSet().includes(arg))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new SourceSet().includesStrings(List.of("foo", arg)))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new SourceSet().includes(new String[0]))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest
+        @NullSource
+        void includesWithNull(String arg) {
+            assertThatThrownBy(() -> new SourceSet().includes(arg))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().includesStrings(List.of("foo", arg)))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().includes((String[]) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().includesStrings((Collection<String>) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().includes((Path[]) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().includes((File[]) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().includes((Collection<File>) null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        void jdkVersionWithNullOrEmpty(String arg) {
+            assertThatThrownBy(() -> new SourceSet().jdkVersion(arg))
+                    .isInstanceOf(arg == null ? NullPointerException.class : IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        void languageVersionWithNullOrEmpty(String arg) {
+            assertThatThrownBy(() -> new SourceSet().languageVersion(arg))
+                    .isInstanceOf(arg == null ? NullPointerException.class : IllegalArgumentException.class);
+        }
+
+        @Test
+        void perPackageOptionsWithNullOrEmpty() {
+            assertThatThrownBy(() -> new SourceSet().perPackageOptions((String[]) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().perPackageOptions((Collection<String>) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().perPackageOptions(List.of()))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new SourceSet().perPackageOptions("opt", null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().perPackageOptions("opt", ""))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest
+        @EmptySource
+        void samplesWithEmpty(String arg) {
+            assertThatThrownBy(() -> new SourceSet().samples(arg))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new SourceSet().samples(new String[0]))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest
+        @NullSource
+        void samplesWithNull(String arg) {
+            assertThatThrownBy(() -> new SourceSet().samples(arg))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().samplesStrings(List.of("foo", arg)))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().samples((String[]) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().samples((Collection<File>) null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        void sourceSetNameWithNullOrEmpty(String arg) {
+            assertThatThrownBy(() -> new SourceSet().sourceSetName(arg))
+                    .isInstanceOf(arg == null ? NullPointerException.class : IllegalArgumentException.class);
+        }
+
+        @Test
+        void srcLinkWithNullOrEmpty() {
+            var f = new File("src");
+
+            assertThatThrownBy(() -> new SourceSet().srcLink((File) null, "remote", "L1"))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().srcLink(f, null, "L1"))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().srcLink(f, "remote", null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().srcLink(f, "", "L1"))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new SourceSet().srcLink(f, "remote", ""))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            assertThatThrownBy(() -> new SourceSet().srcLink((String) null, "remote", "L1"))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().srcLink("", "remote", "L1"))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            assertThatThrownBy(() -> new SourceSet().srcLink((Path) null, "remote", "L1"))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @ParameterizedTest
+        @EmptySource
+        void srcWithEmpty(String arg) {
+            assertThatThrownBy(() -> new SourceSet().src(arg))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new SourceSet().src(new String[0]))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest
+        @NullSource
+        void srcWithNull(String arg) {
+            assertThatThrownBy(() -> new SourceSet().src(arg))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().srcStrings(List.of("foo", arg)))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().src((String[]) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().src((Collection<File>) null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @ParameterizedTest
+        @EmptySource
+        void suppressedFilesWithEmpty(String arg) {
+            assertThatThrownBy(() -> new SourceSet().suppressedFiles(arg))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new SourceSet().suppressedFiles(new String[0]))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest
+        @NullSource
+        void suppressedFilesWithNull(String arg) {
+            assertThatThrownBy(() -> new SourceSet().suppressedFiles(arg))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().suppressedFilesStrings(List.of("foo", arg)))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().suppressedFiles((String[]) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new SourceSet().suppressedFiles((Collection<File>) null))
+                    .isInstanceOf(NullPointerException.class);
         }
     }
 }
