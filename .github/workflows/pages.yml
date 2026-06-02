@@ -3,7 +3,7 @@ name: javadocs-pages
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -44,10 +44,10 @@ jobs:
         run: ./bld download clean javadoc
 
       - name: Setup Pages
-        uses: actions/configure-pages@v6.0.0
+        uses: actions/configure-pages@v6
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v5.0.0
+        uses: actions/upload-pages-artifact@v5
         with:
           # Upload generated Javadocs repository
           path: "build/javadoc/"
