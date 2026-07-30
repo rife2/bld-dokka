@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout source repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -31,13 +31,18 @@ jobs:
         with:
           version: ${{ env.KOTLIN_VERSION }}
 
-      - name: Download dependencies [examples]
-        working-directory: examples
-        run: ./bld download
+      - name: Cache bld dependencies
+        id: cache-bld
+        uses: actions/cache@v6
+        with:
+          path: |
+            examples/lib
+            lib
+          key: ${{ runner.os }}-bld-java${{ matrix.java-version }}-lib
 
-      - name: Run tests [examples]
-        working-directory: examples
-        run: ./bld compile test
+      - name: Compile source code [example]
+        working-directory: example
+        run: ./bld --auto-download-purge clean compile
 
       - name: Build documentation [examples]
         working-directory: examples
@@ -47,11 +52,8 @@ jobs:
           ./bld dokka-gfm
           ./bld dokka-jekyll
 
-      - name: Download dependencies
-        run: ./bld download
-
       - name: Compile source code
-        run: ./bld compile
+        run: ./bld clean compile
 
       - name: Run tests
         run: ./bld test
