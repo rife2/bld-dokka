@@ -114,7 +114,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @since 1.5
      */
     @Override
-    @SuppressFBWarnings("EXS_EXCEPTION_SOFTENING_NO_CHECKED")
     protected List<String> executeConstructProcessCommandList() {
         if (project_ == null || outputFormat_ == null || sourceSet_ == null) {
             if (!silent() && logger.isLoggable(Level.WARNING)) {
@@ -271,7 +270,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param project the project to configure the operation from
      */
     @Override
-    @SuppressFBWarnings("PRMC_POSSIBLY_REDUNDANT_METHOD_CALLS")
     public DokkaOperation fromProject(@NonNull BaseProject project) {
         project_ = ObjectTools.requireNonNull(project, "fromProject");
         if (sourceSet_ == null) {
@@ -659,7 +657,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @throws NullPointerException     if {@code configuration} is {@code null}
      * @throws IllegalArgumentException if {@code configuration} is empty
      */
-    @SuppressFBWarnings(value = "PATH_TRAVERSAL_IN", justification = "caller controls the input")
     public DokkaOperation json(@NonNull String configuration) {
         ObjectTools.requireNotEmpty(configuration, "json");
         json_ = new File(configuration);
@@ -767,7 +764,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @throws NullPointerException     if {@code outputDir} is {@code null}
      * @throws IllegalArgumentException if {@code outputDir} is empty
      */
-    @SuppressFBWarnings(value = "PATH_TRAVERSAL_IN", justification = "caller controls the input")
     public DokkaOperation outputDir(@NonNull String outputDir) {
         ObjectTools.requireNotEmpty(outputDir, "outputDir");
         outputDir_ = new File(outputDir);
