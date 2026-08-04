@@ -32,8 +32,8 @@ import rife.bld.blueprints.BaseProjectBlueprint;
 import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
 import rife.bld.extension.dokka.SourceSet;
-import rife.bld.extension.testing.LoggingExtension;
-import rife.bld.extension.testing.TestLogHandler;
+import rife.bld.testing.LoggingExtension;
+import rife.bld.testing.TestLogHandler;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,6 +41,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
@@ -58,10 +59,6 @@ class DokkaOperationTest {
     private static final String FILE_2 = "file2";
     private static final String FILE_3 = "file3";
     private static final String FILE_4 = "file4";
-
-
-    @SuppressWarnings("LoggerInitializedWithForeignClass")
-    private static final Logger LOGGER = Logger.getLogger(DokkaOperation.class.getName());
     private static final String OPTION_1 = "option1";
     private static final String OPTION_2 = "option2";
     private static final String OPTION_3 = "option3";
@@ -70,13 +67,15 @@ class DokkaOperationTest {
     private static final String PATH_2 = "path2";
     private static final String PATH_3 = "path3";
     private static final String PATH_4 = "path4";
-    private static final TestLogHandler TEST_LOG_HANDLER = new TestLogHandler();
+    @SuppressWarnings("LoggerInitializedWithForeignClass")
+    private static final Logger logger = Logger.getLogger(DokkaOperation.class.getName());
+    private static final TestLogHandler testLogHandler = new TestLogHandler();
 
     @RegisterExtension
     @SuppressWarnings("unused")
-    private static final LoggingExtension LOGGING_EXTENSION = new LoggingExtension(
-            LOGGER,
-            TEST_LOG_HANDLER
+    private static final LoggingExtension loggingExtension = new LoggingExtension(
+            logger,
+            testLogHandler
     );
 
     @Nested
@@ -85,12 +84,14 @@ class DokkaOperationTest {
 
         @Test
         void execute() {
+            testLogHandler.setLevel(Level.FINE);
             var op = new DokkaOperation()
                     .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "examples",
                             "Examples"))
                     .outputDir("build/javadoc")
                     .outputFormat(OutputFormat.JAVADOC);
             assertThatCode(op::execute).doesNotThrowAnyException();
+            testLogHandler.printLogMessages();
         }
 
         @Test
@@ -495,10 +496,10 @@ class DokkaOperationTest {
             }
 
             @Test
-            void pluginConfigurationsMapEmptyMapAllowed() {
+            void pluginConfigurationsMapEmptyMapNotAllowed() {
                 var op = new DokkaOperation();
-                op.pluginConfigurations(Collections.emptyMap());
-                assertThat(op.pluginConfigurations()).isEmpty();
+                assertThatThrownBy(() ->
+                        op.pluginConfigurations(Collections.emptyMap())).isInstanceOf(IllegalArgumentException.class);
             }
 
             @Test
@@ -549,23 +550,19 @@ class DokkaOperationTest {
             }
 
             @Test
-            void pluginConfigurationsMapWithEmptyKeyAllowed() {
+            void pluginConfigurationsMapWithEmptyKeyNotAllowed() {
                 var op = new DokkaOperation();
                 var configs = Map.of("", JSON_BASE); // empty string key
 
-                op.pluginConfigurations(configs);
-                assertThat(op.pluginConfigurations())
-                        .containsExactly(entry("", JSON_BASE));
+                assertThatThrownBy(() -> op.pluginConfigurations(configs)).isInstanceOf(IllegalArgumentException.class);
             }
 
             @Test
-            void pluginConfigurationsMapWithEmptyValuesAllowed() {
+            void pluginConfigurationsMapWithEmptyValuesNotAllowed() {
                 var op = new DokkaOperation();
                 var configs = Map.of(PLUGIN_BASE, ""); // empty string value
 
-                op.pluginConfigurations(configs);
-                assertThat(op.pluginConfigurations())
-                        .containsExactly(entry(PLUGIN_BASE, ""));
+                assertThatThrownBy(() -> op.pluginConfigurations(configs)).isInstanceOf(IllegalArgumentException.class);
             }
         }
     }

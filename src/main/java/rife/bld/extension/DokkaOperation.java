@@ -16,16 +16,14 @@
 
 package rife.bld.extension;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import rife.bld.BaseProject;
 import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
 import rife.bld.extension.dokka.SourceSet;
-import rife.bld.extension.tools.CollectionTools;
-import rife.bld.extension.tools.IOTools;
-import rife.bld.extension.tools.ObjectTools;
-import rife.bld.extension.tools.TextTools;
+import rife.bld.extension.tools.*;
 import rife.bld.operations.AbstractProcessOperation;
 import rife.bld.operations.exceptions.ExitStatusException;
 
@@ -44,6 +42,7 @@ import java.util.stream.Collectors;
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
+@NullMarked
 @SuppressFBWarnings(
         value = "EI_EXPOSE_REP",
         justification = "Builder pattern intentionally exposes mutable collections"
@@ -76,23 +75,23 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     private final Map<String, String> pluginsConfiguration_ = new LinkedHashMap<>();
     private boolean delayTemplateSubstitution_;
     private boolean failOnWarning_;
-    private File json_;
-    private LoggingLevel loggingLevel_;
-    private String moduleName_;
-    private String moduleVersion_;
+    private @Nullable File json_;
+    private @Nullable LoggingLevel loggingLevel_;
+    private @Nullable String moduleName_;
+    private @Nullable String moduleVersion_;
     private boolean noSuppressObviousFunctions_;
     private boolean offlineMode_;
-    private File outputDir_;
-    private OutputFormat outputFormat_;
-    private BaseProject project_;
-    private SourceSet sourceSet_;
+    private @Nullable File outputDir_;
+    private @Nullable OutputFormat outputFormat_;
+    private @Nullable BaseProject project_;
+    private @Nullable SourceSet sourceSet_;
     private boolean suppressInheritedMembers_;
 
     /**
      * Performs this operation.
      *
      * @throws NullPointerException     if {@code project} or {@link #outputFormat() outputformat}
-     *                                  or {@code sourceSet} are {@code null}
+     *                                  or {@code sourceSet} is {@code null}
      * @throws IllegalArgumentException if {@link #json() json} is {@code null} or does not exist
      */
     @Override
@@ -128,7 +127,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         // java
         args.add(javaTool());
 
-        var jarList = getJarList(project_.libBldDirectory(), "^.*dokka-cli.*\\.jar$");
+        var jarList = project_.extensionClasspathJars("org.jetbrains.dokka", "dokka-cli");
         if (!jarList.isEmpty()) {
             // class path
             args.add("-cp");
@@ -255,7 +254,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         }
 
         if (logger.isLoggable(Level.FINE)) {
-            logger.fine(String.join(" ", args));
+            logger.fine(PathTools.formatCommandLine(args));
         }
 
         return args;
@@ -270,7 +269,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param project the project to configure the operation from
      */
     @Override
-    public DokkaOperation fromProject(@NonNull BaseProject project) {
+    public DokkaOperation fromProject(BaseProject project) {
         project_ = ObjectTools.requireNonNull(project, "fromProject");
         if (sourceSet_ == null) {
             sourceSet_ = new SourceSet().src(new File(project.srcMainDirectory(), "kotlin"));
@@ -301,7 +300,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param regex     the regular expression to match
      * @return the Java Archives
      */
-    static List<File> getJarList(@NonNull File directory, @NonNull String regex) {
+    static List<File> getJarList(File directory, String regex) {
         var jars = new ArrayList<File>();
 
         if (directory.isDirectory()) {
@@ -368,12 +367,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param url            the external documentation URL
      * @param packageListUrl the external documentation package list URL
      * @return this operation instance
-     * @throws NullPointerException     if {@code url} or {@code packageListUrl} are {@code null}
-     * @throws IllegalArgumentException if {@code url} or {@code packageListUrl} are empty
+     * @throws NullPointerException     if {@code url} or {@code packageListUrl} is {@code null}
+     * @throws IllegalArgumentException if {@code url} or {@code packageListUrl} are blank
      */
-    public DokkaOperation globalLinks(@NonNull String url, @NonNull String packageListUrl) {
-        ObjectTools.requireNotEmpty(url, "globalLinks url");
-        ObjectTools.requireNotEmpty(packageListUrl, "globalLinks packageListUrl");
+    public DokkaOperation globalLinks(String url, String packageListUrl) {
+        TextTools.requireNotBlank(url, "globalLinks url");
+        TextTools.requireNotBlank(packageListUrl, "globalLinks packageListUrl");
         globalLinks_.put(url, packageListUrl);
         return this;
     }
@@ -387,7 +386,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @throws IllegalArgumentException If {@code globalLinks} is empty
      * @see #globalSrcLink(String...) #globalSrcLink(String...)#globalSrcLink(String...)
      */
-    public DokkaOperation globalLinks(@NonNull Map<String, String> globalLinks) {
+    public DokkaOperation globalLinks(Map<String, String> globalLinks) {
         ObjectTools.requireNotEmpty(globalLinks, "globalLinks");
         globalLinks_.putAll(globalLinks);
         return this;
@@ -410,10 +409,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param options one or more package configurations
      * @return this operation instance
      * @throws NullPointerException     if {@code options} is {@code null} or contain {@code null} elements
-     * @throws IllegalArgumentException if {@code options} is empty or contains empty elements
+     * @throws IllegalArgumentException if {@code options} is empty or contains blank elements
      */
-    public DokkaOperation globalPackageOptions(@NonNull String... options) {
-        ObjectTools.requireNotEmpty(options, "globalPackageOptions");
+    public DokkaOperation globalPackageOptions(String... options) {
+        TextTools.requireNotBlank("globalPackageOptions", options);
         globalPackageOptions_.addAll(List.of(options));
         return this;
     }
@@ -435,10 +434,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param options the package configurations
      * @return this operation instance
      * @throws NullPointerException     if {@code options} is {@code null} or contain {@code null} elements
-     * @throws IllegalArgumentException if {@code options} is empty or contains empty elements
+     * @throws IllegalArgumentException if {@code options} is empty or contains blank elements
      */
-    public final DokkaOperation globalPackageOptions(@NonNull Collection<String> options) {
-        ObjectTools.requireNotEmpty(options, "globalPackageOptions");
+    public final DokkaOperation globalPackageOptions(Collection<String> options) {
+        TextTools.requireNotBlank(options, "globalPackageOptions");
         globalPackageOptions_.addAll(options);
         return this;
     }
@@ -458,11 +457,11 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param links one or more links mapping
      * @return this operation instance
-     * @throws NullPointerException     if {@code links} is null
-     * @throws IllegalArgumentException if {@code links} is empty or contains {@code null} or empty elements
+     * @throws NullPointerException     if {@code links} is {@code null} or contains {@code null} elements
+     * @throws IllegalArgumentException if {@code links} is empty or contains blank elements
      */
-    public DokkaOperation globalSrcLink(@NonNull String... links) {
-        ObjectTools.requireNotEmpty(links, "globalSrcLink");
+    public DokkaOperation globalSrcLink(String... links) {
+        TextTools.requireNotBlank("globalSrcLink", links);
         globalSrcLinks_.addAll(List.of(links));
         return this;
     }
@@ -472,11 +471,11 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param links the links mapping
      * @return this operation instance
-     * @throws NullPointerException     if {@code links} is null
+     * @throws NullPointerException     if {@code links} is {@code null}
      * @throws IllegalArgumentException if {@code links} is empty or contains {@code null} or empty elements
      */
-    public final DokkaOperation globalSrcLink(@NonNull Collection<String> links) {
-        ObjectTools.requireNotEmpty(links, "globalSrcLink");
+    public final DokkaOperation globalSrcLink(Collection<String> links) {
+        TextTools.requireNotBlank(links, "globalSrcLink");
         globalSrcLinks_.addAll(links);
         return this;
     }
@@ -504,7 +503,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @throws IllegalArgumentException If {@code includes} is empty
      * @see #includes(Collection)
      */
-    public DokkaOperation includes(@NonNull File... files) {
+    public DokkaOperation includes(File... files) {
         ObjectTools.requireNotEmpty(files, INCLUDES);
         includes_.addAll(List.of(files));
         return this;
@@ -523,7 +522,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @throws IllegalArgumentException If {@code files} is empty
      * @see #includes(File...)
      */
-    public final DokkaOperation includes(@NonNull Collection<File> files) {
+    public final DokkaOperation includes(Collection<File> files) {
         ObjectTools.requireNotEmpty(files, INCLUDES);
         includes_.addAll(files);
         return this;
@@ -539,11 +538,11 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param files one or more files
      * @return this operation instance
      * @throws NullPointerException     if {@code files} is {@code null} or contain {@code null} elements
-     * @throws IllegalArgumentException if {@code files} is empty or contains empty elements
+     * @throws IllegalArgumentException if {@code files} is empty or contains blank elements
      * @see #includesStrings(Collection)
      */
-    public DokkaOperation includes(@NonNull String... files) {
-        ObjectTools.requireNotEmpty(files, INCLUDES);
+    public DokkaOperation includes(String... files) {
+        TextTools.requireNotBlank(INCLUDES, files);
         includes_.addAll(CollectionTools.combineStringsToFiles(files));
         return this;
     }
@@ -561,7 +560,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @throws IllegalArgumentException If {@code files} is empty
      * @see #includesPaths(Collection)
      */
-    public DokkaOperation includes(@NonNull Path... files) {
+    public DokkaOperation includes(Path... files) {
         ObjectTools.requireNotEmpty(files, INCLUDES);
         includes_.addAll(CollectionTools.combinePathsToFiles(files));
         return this;
@@ -590,7 +589,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @throws IllegalArgumentException If {@code files} is empty
      * @see #includes(Path...)
      */
-    public final DokkaOperation includesPaths(@NonNull Collection<Path> files) {
+    public final DokkaOperation includesPaths(Collection<Path> files) {
         ObjectTools.requireNotEmpty(files, INCLUDES);
         includes_.addAll(CollectionTools.combinePathsToFiles(files));
         return this;
@@ -609,8 +608,8 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @throws IllegalArgumentException if {@code files} is empty or contains empty elements
      * @see #includes(String...)
      */
-    public final DokkaOperation includesStrings(@NonNull Collection<String> files) {
-        ObjectTools.requireNotEmpty(files, INCLUDES);
+    public final DokkaOperation includesStrings(Collection<String> files) {
+        TextTools.requireNotBlank(files, INCLUDES);
         includes_.addAll(CollectionTools.combineStringsToFiles(files));
         return this;
     }
@@ -622,7 +621,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      * @throws NullPointerException if {@code configuration} is {@code null}
      */
-    public DokkaOperation json(@NonNull Path configuration) {
+    public DokkaOperation json(Path configuration) {
         ObjectTools.requireNonNull(configuration, "json");
         json_ = configuration.toFile();
         return this;
@@ -635,7 +634,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      * @throws NullPointerException if {@code configuration} is {@code null}
      */
-    public DokkaOperation json(@NonNull File configuration) {
+    public DokkaOperation json(File configuration) {
         json_ = ObjectTools.requireNonNull(configuration, "json");
         return this;
     }
@@ -645,6 +644,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @return the configuration file path
      */
+    @Nullable
     public File json() {
         return json_;
     }
@@ -655,10 +655,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param configuration the configuration file path
      * @return this operation instance
      * @throws NullPointerException     if {@code configuration} is {@code null}
-     * @throws IllegalArgumentException if {@code configuration} is empty
+     * @throws IllegalArgumentException if {@code configuration} is blank
      */
-    public DokkaOperation json(@NonNull String configuration) {
-        ObjectTools.requireNotEmpty(configuration, "json");
+    public DokkaOperation json(String configuration) {
+        TextTools.requireNotBlank(configuration, "json");
         json_ = new File(configuration);
         return this;
     }
@@ -670,7 +670,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      * @throws NullPointerException if {@code loggingLevel} is {@code null}
      */
-    public DokkaOperation loggingLevel(@NonNull LoggingLevel loggingLevel) {
+    public DokkaOperation loggingLevel(LoggingLevel loggingLevel) {
         loggingLevel_ = ObjectTools.requireNonNull(loggingLevel, "loggingLevel");
         return this;
     }
@@ -683,10 +683,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param moduleName the project/module name
      * @return this operation instance
      * @throws NullPointerException     if {@code moduleName} is {@code null}
-     * @throws IllegalArgumentException if {@code moduleName} is empty
+     * @throws IllegalArgumentException if {@code moduleName} is blank
      */
-    public DokkaOperation moduleName(@NonNull String moduleName) {
-        moduleName_ = ObjectTools.requireNotEmpty(moduleName, "moduleName");
+    public DokkaOperation moduleName(String moduleName) {
+        moduleName_ = TextTools.requireNotBlank(moduleName, "moduleName");
         return this;
     }
 
@@ -696,10 +696,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param version the version
      * @return this operation instance
      * @throws NullPointerException     if {@code version} is {@code null}
-     * @throws IllegalArgumentException if {@code version} is empty
+     * @throws IllegalArgumentException if {@code version} is blank
      */
-    public DokkaOperation moduleVersion(@NonNull String version) {
-        moduleVersion_ = ObjectTools.requireNotEmpty(version, "moduleVersion");
+    public DokkaOperation moduleVersion(String version) {
+        moduleVersion_ = TextTools.requireNotBlank(version, "moduleVersion");
         return this;
     }
 
@@ -750,6 +750,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @return the output directory
      */
+    @Nullable
     public File outputDir() {
         return outputDir_;
     }
@@ -762,10 +763,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param outputDir the output directory
      * @return this operation instance
      * @throws NullPointerException     if {@code outputDir} is {@code null}
-     * @throws IllegalArgumentException if {@code outputDir} is empty
+     * @throws IllegalArgumentException if {@code outputDir} is blank
      */
-    public DokkaOperation outputDir(@NonNull String outputDir) {
-        ObjectTools.requireNotEmpty(outputDir, "outputDir");
+    public DokkaOperation outputDir(String outputDir) {
+        TextTools.requireNotBlank(outputDir, "outputDir");
         outputDir_ = new File(outputDir);
         return this;
     }
@@ -779,7 +780,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      * @throws NullPointerException if {@code outputDir} is {@code null}
      */
-    public DokkaOperation outputDir(@NonNull File outputDir) {
+    public DokkaOperation outputDir(File outputDir) {
         outputDir_ = ObjectTools.requireNonNull(outputDir, "outputDir");
         return this;
     }
@@ -793,7 +794,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      * @throws NullPointerException if {@code outputDir} is {@code null}
      */
-    public DokkaOperation outputDir(@NonNull Path outputDir) {
+    public DokkaOperation outputDir(Path outputDir) {
         ObjectTools.requireNonNull(outputDir, "outputDir");
         outputDir_ = outputDir.toFile();
         return this;
@@ -804,6 +805,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @return the output format
      */
+    @Nullable
     public OutputFormat outputFormat() {
         return outputFormat_;
     }
@@ -815,7 +817,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      * @throws NullPointerException if {@code format} is {@code null}
      */
-    public DokkaOperation outputFormat(@NonNull OutputFormat format) {
+    public DokkaOperation outputFormat(OutputFormat format) {
         ObjectTools.requireNonNull(format, "outputFormat");
         outputFormat_ = format;
         return this;
@@ -827,12 +829,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param name              The fully qualified plugin name
      * @param jsonConfiguration The plugin JSON configuration
      * @return this operation instance
-     * @throws NullPointerException     if {@code name} or {@code jsonConfiguration} are {@code null}
-     * @throws IllegalArgumentException if {@code name} or {@code jsonConfiguration} are empty
+     * @throws NullPointerException     if {@code name} or {@code jsonConfiguration} is {@code null}
+     * @throws IllegalArgumentException if {@code name} or {@code jsonConfiguration} are blank
      */
-    public DokkaOperation pluginConfigurations(@NonNull String name, @NonNull String jsonConfiguration) {
-        ObjectTools.requireNotEmpty(name, "pluginConfigurations name");
-        ObjectTools.requireNotEmpty(jsonConfiguration, "pluginConfigurations jsonConfiguration");
+    public DokkaOperation pluginConfigurations(String name, String jsonConfiguration) {
+        TextTools.requireNotBlank(name, "pluginConfigurations name");
+        TextTools.requireNotBlank(jsonConfiguration, "pluginConfigurations jsonConfiguration");
         pluginsConfiguration_.put(name, jsonConfiguration);
         return this;
     }
@@ -842,12 +844,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param pluginConfigurations the map of configurations
      * @return this operation instance
-     * @throws NullPointerException     if {@code pluginConfigurations} is {@code null}
-     * @throws IllegalArgumentException If {@code pluginConfigurations} is empty
+     * @throws NullPointerException     if {@code pluginConfigurations} is {@code null} or contain {@code null} elements
+     * @throws IllegalArgumentException If {@code pluginConfigurations} is empty or contains empty elements
      * @see #pluginConfigurations(String, String)
      */
-    public DokkaOperation pluginConfigurations(@NonNull Map<String, String> pluginConfigurations) {
-        ObjectTools.requireNonNull(pluginConfigurations, "pluginConfigurations");
+    public DokkaOperation pluginConfigurations(Map<String, String> pluginConfigurations) {
+        ObjectTools.requireNotEmpty(pluginConfigurations, "pluginConfigurations");
         pluginsConfiguration_.putAll(pluginConfigurations);
         return this;
     }
@@ -870,7 +872,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @throws IllegalArgumentException If {@code jars} is empty
      * @see #pluginsClasspath(Collection)
      */
-    public DokkaOperation pluginsClasspath(@NonNull File... jars) {
+    public DokkaOperation pluginsClasspath(File... jars) {
         ObjectTools.requireNotEmpty(jars, PLUGINS_CLASSPATH);
         pluginsClasspath_.addAll(List.of(jars));
         return this;
@@ -885,7 +887,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @throws IllegalArgumentException If {@code jars} is empty
      * @see #pluginsClasspath(Collection)
      */
-    public final DokkaOperation pluginsClasspath(@NonNull Collection<File> jars) {
+    public final DokkaOperation pluginsClasspath(Collection<File> jars) {
         ObjectTools.requireNotEmpty(jars, PLUGINS_CLASSPATH);
         pluginsClasspath_.addAll(jars);
         return this;
@@ -897,11 +899,11 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param jars one or more jars
      * @return this operation instance
      * @throws NullPointerException     if {@code jars} is {@code null} or contain {@code null} elements
-     * @throws IllegalArgumentException if {@code jars} is empty or contains empty elements
+     * @throws IllegalArgumentException if {@code jars} is empty or contains blank elements
      * @see #pluginsClasspathStrings(Collection)
      */
-    public DokkaOperation pluginsClasspath(@NonNull String... jars) {
-        ObjectTools.requireNotEmpty(jars, PLUGINS_CLASSPATH);
+    public DokkaOperation pluginsClasspath(String... jars) {
+        TextTools.requireNotBlank(PLUGINS_CLASSPATH, jars);
         pluginsClasspath_.addAll(CollectionTools.combineStringsToFiles(jars));
         return this;
     }
@@ -915,7 +917,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @throws IllegalArgumentException if {@code jars} is empty or contains empty elements
      * @see #pluginsClasspathPaths(Collection)
      */
-    public DokkaOperation pluginsClasspath(@NonNull Path... jars) {
+    public DokkaOperation pluginsClasspath(Path... jars) {
         ObjectTools.requireNotEmpty(jars, PLUGINS_CLASSPATH);
         pluginsClasspath_.addAll(CollectionTools.combinePathsToFiles(jars));
         return this;
@@ -940,7 +942,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @throws IllegalArgumentException If {@code jars} is empty
      * @see #pluginsClasspath(Path...)
      */
-    public final DokkaOperation pluginsClasspathPaths(@NonNull Collection<Path> jars) {
+    public final DokkaOperation pluginsClasspathPaths(Collection<Path> jars) {
         ObjectTools.requireNotEmpty(jars, "pluginsClasspathPaths");
         pluginsClasspath_.addAll(CollectionTools.combinePathsToFiles(jars));
         return this;
@@ -955,8 +957,8 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @throws IllegalArgumentException If {@code jars} is empty
      * @see #pluginsClasspath(String...)
      */
-    public final DokkaOperation pluginsClasspathStrings(@NonNull Collection<String> jars) {
-        ObjectTools.requireNotEmpty(jars, "pluginsClasspathStrings");
+    public final DokkaOperation pluginsClasspathStrings(Collection<String> jars) {
+        TextTools.requireNotBlank(jars, "pluginsClasspathStrings");
         pluginsClasspath_.addAll(CollectionTools.combineStringsToFiles(jars));
         return this;
     }
@@ -970,7 +972,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      * @throws NullPointerException if {@code sourceSet} is {@code null}
      */
-    public DokkaOperation sourceSet(@NonNull SourceSet sourceSet) {
+    public DokkaOperation sourceSet(SourceSet sourceSet) {
         sourceSet_ = ObjectTools.requireNonNull(sourceSet, "sourceSet");
         return this;
     }

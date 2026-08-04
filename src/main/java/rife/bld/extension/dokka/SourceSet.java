@@ -16,8 +16,9 @@
 
 package rife.bld.extension.dokka;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import rife.bld.extension.DokkaOperation;
 import rife.bld.extension.tools.CollectionTools;
 import rife.bld.extension.tools.ObjectTools;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
  * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
+@NullMarked
 public class SourceSet {
 
     private static final String INCLUDES = "includes";
@@ -50,17 +52,17 @@ public class SourceSet {
     private final Map<String, String> srcLinks_ = new LinkedHashMap<>();
     private final List<File> src_ = new ArrayList<>();
     private final List<File> suppressedFiles_ = new ArrayList<>();
-    private AnalysisPlatform analysisPlatform_;
-    private String apiVersion_;
-    private String displayName_;
-    private String jdkVersion_;
-    private String languageVersion_;
+    private @Nullable AnalysisPlatform analysisPlatform_;
+    private @Nullable String apiVersion_;
+    private @Nullable String displayName_;
+    private @Nullable String jdkVersion_;
+    private @Nullable String languageVersion_;
     private boolean noJdkLink_;
     private boolean noSkipEmptyPackages_;
     private boolean noStdlibLink_;
     private boolean reportUndocumented_;
     private boolean skipDeprecated_;
-    private String sourceSetName_;
+    private @Nullable String sourceSetName_;
 
     /**
      * Normalizes a remote path and line suffix for Dokka's {@code -srcLink} option.
@@ -72,7 +74,7 @@ public class SourceSet {
      * @param lineSuffix the line suffix, e.g. {@code #L10} or {@code L10}
      * @return the normalized link
      */
-    private static String normalizeSrcLink(@NonNull String remotePath, @NonNull String lineSuffix) {
+    private static String normalizeSrcLink(String remotePath, String lineSuffix) {
         ObjectTools.requireNotEmpty(remotePath, "remotePath");
         ObjectTools.requireNotEmpty(lineSuffix, "lineSuffix");
 
@@ -95,7 +97,7 @@ public class SourceSet {
      * @return this operation instance
      * @throws NullPointerException if {@code analysisPlatform} is {@code null}
      */
-    public SourceSet analysisPlatform(@NonNull AnalysisPlatform analysisPlatform) {
+    public SourceSet analysisPlatform(AnalysisPlatform analysisPlatform) {
         analysisPlatform_ = ObjectTools.requireNonNull(analysisPlatform, "analysisPlatform");
         return this;
     }
@@ -105,6 +107,7 @@ public class SourceSet {
      *
      * @return the analysis platform, or {@code null} if not set
      */
+    @Nullable
     public AnalysisPlatform analysisPlatform() {
         return analysisPlatform_;
     }
@@ -127,7 +130,7 @@ public class SourceSet {
      * @throws NullPointerException     if {@code apiVersion} is {@code null}
      * @throws IllegalArgumentException if {@code apiVersion} is empty
      */
-    public SourceSet apiVersion(@NonNull String apiVersion) {
+    public SourceSet apiVersion(String apiVersion) {
         apiVersion_ = ObjectTools.requireNotEmpty(apiVersion, "apiVersion");
         return this;
     }
@@ -137,6 +140,7 @@ public class SourceSet {
      *
      * @return the API version, or {@code null} if not set
      */
+    @Nullable
     public String apiVersion() {
         return apiVersion_;
     }
@@ -304,7 +308,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code files} is empty
      * @see #classpath(Collection)
      */
-    public SourceSet classpath(@NonNull File... files) {
+    public SourceSet classpath(File... files) {
         ObjectTools.requireNotEmpty(files, "classpath files");
         classpath_.addAll(List.of(files));
         return this;
@@ -323,7 +327,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code files} is empty
      * @see #classpath(File...)
      */
-    public final SourceSet classpath(@NonNull Collection<File> files) {
+    public final SourceSet classpath(Collection<File> files) {
         ObjectTools.requireNotEmpty(files, "classpath");
         classpath_.addAll(files);
         return this;
@@ -342,7 +346,7 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code files} is empty or contains empty elements
      * @see #classpathStrings(Collection)
      */
-    public SourceSet classpath(@NonNull String... files) {
+    public SourceSet classpath(String... files) {
         ObjectTools.requireNotEmpty(files, "classpath");
         classpath_.addAll(CollectionTools.combineStringsToFiles(files));
         return this;
@@ -361,7 +365,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code files} is empty
      * @see #classpathPaths(Collection)
      */
-    public SourceSet classpath(@NonNull Path... files) {
+    public SourceSet classpath(Path... files) {
         ObjectTools.requireNotEmpty(files, "classpath");
         classpath_.addAll(CollectionTools.combinePathsToFiles(files));
         return this;
@@ -390,7 +394,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code files} is empty
      * @see #classpath(Path...)
      */
-    public final SourceSet classpathPaths(@NonNull Collection<Path> files) {
+    public final SourceSet classpathPaths(Collection<Path> files) {
         ObjectTools.requireNotEmpty(files, "classpathPaths");
         classpath_.addAll(CollectionTools.combinePathsToFiles(files));
         return this;
@@ -409,7 +413,7 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code files} is empty or contains empty elements
      * @see #classpath(String...)
      */
-    public final SourceSet classpathStrings(@NonNull Collection<String> files) {
+    public final SourceSet classpathStrings(Collection<String> files) {
         ObjectTools.requireNotEmpty(files, "classpathStrings");
         classpath_.addAll(CollectionTools.combineStringsToFiles(files));
         return this;
@@ -424,7 +428,7 @@ public class SourceSet {
      * @throws NullPointerException     if {@code moduleName} or {@code sourceSetName} is {@code null}
      * @throws IllegalArgumentException if {@code moduleName} or {@code sourceSetName} is empty
      */
-    public SourceSet dependentSourceSets(@NonNull String moduleName, @NonNull String sourceSetName) {
+    public SourceSet dependentSourceSets(String moduleName, String sourceSetName) {
         ObjectTools.requireNotEmpty(moduleName, "moduleName");
         ObjectTools.requireNotEmpty(sourceSetName, "sourceSetName");
         dependentSourceSets_.put(moduleName, sourceSetName);
@@ -450,7 +454,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code dependentSourceSets} is empty
      * @see #dependentSourceSets(String, String)
      */
-    public SourceSet dependentSourceSets(@NonNull Map<String, String> dependentSourceSets) {
+    public SourceSet dependentSourceSets(Map<String, String> dependentSourceSets) {
         ObjectTools.requireNotEmpty(dependentSourceSets, "dependentSourceSets");
         dependentSourceSets_.putAll(dependentSourceSets);
         return this;
@@ -469,7 +473,7 @@ public class SourceSet {
      * @throws NullPointerException     if {@code displayName} is {@code null}
      * @throws IllegalArgumentException if {@code displayName} is empty
      */
-    public SourceSet displayName(@NonNull String displayName) {
+    public SourceSet displayName(String displayName) {
         displayName_ = ObjectTools.requireNotEmpty(displayName, "displayName");
         return this;
     }
@@ -479,6 +483,7 @@ public class SourceSet {
      *
      * @return the display name, or {@code null} if not set
      */
+    @Nullable
     public String displayName() {
         return displayName_;
     }
@@ -496,7 +501,7 @@ public class SourceSet {
      * @throws NullPointerException     if {@code visibilities} is {@code null}
      * @throws IllegalArgumentException If {@code visibilities} is empty
      */
-    public SourceSet documentedVisibilities(@NonNull DocumentedVisibility... visibilities) {
+    public SourceSet documentedVisibilities(DocumentedVisibility... visibilities) {
         ObjectTools.requireNotEmpty(visibilities, "documentedVisibilities");
         documentedVisibilities_.addAll(List.of(visibilities));
         return this;
@@ -523,7 +528,7 @@ public class SourceSet {
      * @throws NullPointerException     if {@code url} or {@code packageListUrl} is {@code null}
      * @throws IllegalArgumentException if {@code url} or {@code packageListUrl} is empty
      */
-    public SourceSet externalDocumentationLinks(@NonNull String url, @NonNull String packageListUrl) {
+    public SourceSet externalDocumentationLinks(String url, String packageListUrl) {
         ObjectTools.requireNotEmpty(url, "url");
         ObjectTools.requireNotEmpty(packageListUrl, "packageListUrl");
         externalDocumentationLinks_.put(url, packageListUrl);
@@ -551,7 +556,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code externalDocumentationLinks} is empty
      * @see #externalDocumentationLinks(String, String)
      */
-    public SourceSet externalDocumentationLinks(@NonNull Map<String, String> externalDocumentationLinks) {
+    public SourceSet externalDocumentationLinks(Map<String, String> externalDocumentationLinks) {
         ObjectTools.requireNotEmpty(externalDocumentationLinks, "externalDocumentationLinks");
         externalDocumentationLinks_.putAll(externalDocumentationLinks);
         return this;
@@ -571,7 +576,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code files} is empty
      * @see #includes(Collection)
      */
-    public SourceSet includes(@NonNull File... files) {
+    public SourceSet includes(File... files) {
         ObjectTools.requireNotEmpty(files, INCLUDES);
         includes_.addAll(List.of(files));
         return this;
@@ -591,7 +596,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code files} is empty
      * @see #includes(File...)
      */
-    public final SourceSet includes(@NonNull Collection<File> files) {
+    public final SourceSet includes(Collection<File> files) {
         ObjectTools.requireNotEmpty(files, INCLUDES);
         includes_.addAll(files);
         return this;
@@ -611,7 +616,7 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code files} is empty or contains empty elements
      * @see #includesStrings(Collection)
      */
-    public SourceSet includes(@NonNull String... files) {
+    public SourceSet includes(String... files) {
         ObjectTools.requireNotEmpty(files, INCLUDES);
         includes_.addAll(CollectionTools.combineStringsToFiles(files));
         return this;
@@ -631,7 +636,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code files} is empty
      * @see #includesPaths(Collection)
      */
-    public SourceSet includes(@NonNull Path... files) {
+    public SourceSet includes(Path... files) {
         ObjectTools.requireNotEmpty(files, INCLUDES);
         includes_.addAll(CollectionTools.combinePathsToFiles(files));
         return this;
@@ -661,7 +666,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code files} is empty
      * @see #includes(Path...)
      */
-    public final SourceSet includesPaths(@NonNull Collection<Path> files) {
+    public final SourceSet includesPaths(Collection<Path> files) {
         ObjectTools.requireNotEmpty(files, INCLUDES);
         includes_.addAll(CollectionTools.combinePathsToFiles(files));
         return this;
@@ -681,7 +686,7 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code files} is empty or contains empty elements
      * @see #includes(String...)
      */
-    public final SourceSet includesStrings(@NonNull Collection<String> files) {
+    public final SourceSet includesStrings(Collection<String> files) {
         ObjectTools.requireNotEmpty(files, INCLUDES);
         includes_.addAll(CollectionTools.combineStringsToFiles(files));
         return this;
@@ -692,6 +697,7 @@ public class SourceSet {
      *
      * @return the JDK version.
      */
+    @Nullable
     public String jdkVersion() {
         return jdkVersion_;
     }
@@ -724,7 +730,7 @@ public class SourceSet {
      * @throws NullPointerException     if {@code jdkVersion} is {@code null}
      * @throws IllegalArgumentException if {@code jdkVersion} is empty
      */
-    public SourceSet jdkVersion(@NonNull String jdkVersion) {
+    public SourceSet jdkVersion(String jdkVersion) {
         jdkVersion_ = ObjectTools.requireNotEmpty(jdkVersion, "jdkVersion");
         return this;
     }
@@ -747,7 +753,7 @@ public class SourceSet {
      * @throws NullPointerException     if {@code languageVersion} is {@code null}
      * @throws IllegalArgumentException if {@code languageVersion} is empty
      */
-    public SourceSet languageVersion(@NonNull String languageVersion) {
+    public SourceSet languageVersion(String languageVersion) {
         languageVersion_ = ObjectTools.requireNotEmpty(languageVersion, "languageVersion");
         return this;
     }
@@ -757,6 +763,7 @@ public class SourceSet {
      *
      * @return the language version, or {@code null} if not set
      */
+    @Nullable
     public String languageVersion() {
         return languageVersion_;
     }
@@ -865,7 +872,7 @@ public class SourceSet {
      * @throws NullPointerException     if {@code perPackageOptions} is {@code null} or contain {@code null} elements
      * @throws IllegalArgumentException if {@code perPackageOptions} is empty or contains empty elements
      */
-    public SourceSet perPackageOptions(@NonNull String... perPackageOptions) {
+    public SourceSet perPackageOptions(String... perPackageOptions) {
         ObjectTools.requireNotEmpty(perPackageOptions, "perPackageOptions");
         perPackageOptions_.addAll(List.of(perPackageOptions));
         return this;
@@ -892,7 +899,7 @@ public class SourceSet {
      * @throws NullPointerException     if {@code perPackageOptions} is {@code null} or contain {@code null} elements
      * @throws IllegalArgumentException if {@code perPackageOptions} is empty or contains empty elements
      */
-    public final SourceSet perPackageOptions(@NonNull Collection<String> perPackageOptions) {
+    public final SourceSet perPackageOptions(Collection<String> perPackageOptions) {
         ObjectTools.requireNotEmpty(perPackageOptions, "perPackageOptions");
         perPackageOptions_.addAll(perPackageOptions);
         return this;
@@ -947,7 +954,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code samples} is empty
      * @see #samples(Collection)
      */
-    public SourceSet samples(@NonNull File... samples) {
+    public SourceSet samples(File... samples) {
         ObjectTools.requireNotEmpty(samples, SAMPLES);
         samples_.addAll(List.of(samples));
         return this;
@@ -965,7 +972,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code samples} is empty
      * @see #samples(File...)
      */
-    public final SourceSet samples(@NonNull Collection<File> samples) {
+    public final SourceSet samples(Collection<File> samples) {
         ObjectTools.requireNotEmpty(samples, SAMPLES);
         samples_.addAll(samples);
         return this;
@@ -983,7 +990,7 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code samples} is empty or contains empty elements
      * @see #samplesStrings(Collection)
      */
-    public SourceSet samples(@NonNull String... samples) {
+    public SourceSet samples(String... samples) {
         ObjectTools.requireNotEmpty(samples, SAMPLES);
         samples_.addAll(CollectionTools.combineStringsToFiles(samples));
         return this;
@@ -1001,7 +1008,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code samples} is empty
      * @see #samplesPaths(Collection)
      */
-    public SourceSet samples(@NonNull Path... samples) {
+    public SourceSet samples(Path... samples) {
         ObjectTools.requireNotEmpty(samples, SAMPLES);
         samples_.addAll(CollectionTools.combinePathsToFiles(samples));
         return this;
@@ -1019,7 +1026,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code samples} is empty
      * @see #samples(Path...)
      */
-    public final SourceSet samplesPaths(@NonNull Collection<Path> samples) {
+    public final SourceSet samplesPaths(Collection<Path> samples) {
         ObjectTools.requireNotEmpty(samples, SAMPLES);
         samples_.addAll(CollectionTools.combinePathsToFiles(samples));
         return this;
@@ -1037,7 +1044,7 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code samples} is empty or contains empty elements
      * @see #samples(String...)
      */
-    public final SourceSet samplesStrings(@NonNull Collection<String> samples) {
+    public final SourceSet samplesStrings(Collection<String> samples) {
         ObjectTools.requireNotEmpty(samples, SAMPLES);
         samples_.addAll(CollectionTools.combineStringsToFiles(samples));
         return this;
@@ -1075,7 +1082,7 @@ public class SourceSet {
      * @throws NullPointerException     if {@code sourceSetName} is {@code null}
      * @throws IllegalArgumentException if {@code sourceSetName} is empty
      */
-    public SourceSet sourceSetName(@NonNull String sourceSetName) {
+    public SourceSet sourceSetName(String sourceSetName) {
         sourceSetName_ = ObjectTools.requireNotEmpty(sourceSetName, "sourceSetName");
         return this;
     }
@@ -1085,6 +1092,7 @@ public class SourceSet {
      *
      * @return the source set name, or {@code null} if not set
      */
+    @Nullable
     public String sourceSetName() {
         return sourceSetName_;
     }
@@ -1101,7 +1109,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code src} is empty
      * @see #src(Collection)
      */
-    public SourceSet src(@NonNull File... src) {
+    public SourceSet src(File... src) {
         ObjectTools.requireNotEmpty(src, SRC);
         src_.addAll(List.of(src));
         return this;
@@ -1119,7 +1127,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code src} is empty
      * @see #src(File...)
      */
-    public final SourceSet src(@NonNull Collection<File> src) {
+    public final SourceSet src(Collection<File> src) {
         ObjectTools.requireNotEmpty(src, SRC);
         src_.addAll(src);
         return this;
@@ -1137,7 +1145,7 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code src} is empty or contains empty elements
      * @see #srcStrings(Collection)
      */
-    public SourceSet src(@NonNull String... src) {
+    public SourceSet src(String... src) {
         ObjectTools.requireNotEmpty(src, SRC);
         src_.addAll(CollectionTools.combineStringsToFiles(src));
         return this;
@@ -1155,7 +1163,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code src} is empty
      * @see #srcPaths(Collection)
      */
-    public SourceSet src(@NonNull Path... src) {
+    public SourceSet src(Path... src) {
         ObjectTools.requireNotEmpty(src, SRC);
         src_.addAll(CollectionTools.combinePathsToFiles(src));
         return this;
@@ -1181,7 +1189,7 @@ public class SourceSet {
      * @throws NullPointerException     if {@code srcPath}, {@code remotePath} or {@code lineSuffix} are {@code null}
      * @throws IllegalArgumentException if {@code srcPath}, {@code remotePath} or {@code lineSuffix} are empty
      */
-    public SourceSet srcLink(@NonNull File srcPath, @NonNull String remotePath, @NonNull String lineSuffix) {
+    public SourceSet srcLink(File srcPath, String remotePath, String lineSuffix) {
         ObjectTools.requireNonNull(srcPath, "srcLink srcPath");
         ObjectTools.requireNotEmpty(remotePath, "srcLink remotePath");
         ObjectTools.requireNotEmpty(lineSuffix, "srcLink lineSuffix");
@@ -1199,7 +1207,7 @@ public class SourceSet {
      * @throws NullPointerException     if {@code srcPath}, {@code remotePath} or {@code lineSuffix} are {@code null}
      * @throws IllegalArgumentException if {@code srcPath}, {@code remotePath} or {@code lineSuffix} are empty
      */
-    public SourceSet srcLink(@NonNull String srcPath, @NonNull String remotePath, @NonNull String lineSuffix) {
+    public SourceSet srcLink(String srcPath, String remotePath, String lineSuffix) {
         ObjectTools.requireNotEmpty(srcPath, "srcPath");
         ObjectTools.requireNotEmpty(remotePath, "remotePath");
         ObjectTools.requireNotEmpty(lineSuffix, "lineSuffix");
@@ -1216,7 +1224,7 @@ public class SourceSet {
      * @return this operation instance
      * @throws NullPointerException if {@code srcPath}, {@code remotePath} or {@code lineSuffix} are {@code null}
      */
-    public SourceSet srcLink(@NonNull Path srcPath, @NonNull String remotePath, @NonNull String lineSuffix) {
+    public SourceSet srcLink(Path srcPath, String remotePath, String lineSuffix) {
         ObjectTools.requireNonNull(srcPath, "srcPath");
         ObjectTools.requireNotEmpty(remotePath, "remotePath");
         ObjectTools.requireNotEmpty(lineSuffix, "lineSuffix");
@@ -1246,7 +1254,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code src} is empty
      * @see #src(Path...)
      */
-    public final SourceSet srcPaths(@NonNull Collection<Path> src) {
+    public final SourceSet srcPaths(Collection<Path> src) {
         ObjectTools.requireNotEmpty(src, SRC);
         src_.addAll(CollectionTools.combinePathsToFiles(src));
         return this;
@@ -1264,7 +1272,7 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code src} is empty or contains empty elements
      * @see #src(String...)
      */
-    public final SourceSet srcStrings(@NonNull Collection<String> src) {
+    public final SourceSet srcStrings(Collection<String> src) {
         ObjectTools.requireNotEmpty(src, SRC);
         src_.addAll(CollectionTools.combineStringsToFiles(src));
         return this;
@@ -1291,7 +1299,7 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code suppressedFiles} is empty or contains empty elements
      * @see #suppressedFilesStrings(Collection)
      */
-    public SourceSet suppressedFiles(@NonNull String... suppressedFiles) {
+    public SourceSet suppressedFiles(String... suppressedFiles) {
         ObjectTools.requireNotEmpty(suppressedFiles, SUPPRESSED_FILES);
         suppressedFiles_.addAll(CollectionTools.combineStringsToFiles(suppressedFiles));
         return this;
@@ -1308,7 +1316,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code suppressedFiles} is empty
      * @see #suppressedFiles(File...)
      */
-    public final SourceSet suppressedFiles(@NonNull Collection<File> suppressedFiles) {
+    public final SourceSet suppressedFiles(Collection<File> suppressedFiles) {
         ObjectTools.requireNotEmpty(suppressedFiles, SUPPRESSED_FILES);
         suppressedFiles_.addAll(suppressedFiles);
         return this;
@@ -1325,7 +1333,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code suppressedFiles} is empty
      * @see #suppressedFiles(Collection)
      */
-    public SourceSet suppressedFiles(@NonNull File... suppressedFiles) {
+    public SourceSet suppressedFiles(File... suppressedFiles) {
         ObjectTools.requireNotEmpty(suppressedFiles, SUPPRESSED_FILES);
         suppressedFiles_.addAll(List.of(suppressedFiles));
         return this;
@@ -1342,7 +1350,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code suppressedFiles} is empty
      * @see #suppressedFilesPaths(Collection)
      */
-    public SourceSet suppressedFiles(@NonNull Path... suppressedFiles) {
+    public SourceSet suppressedFiles(Path... suppressedFiles) {
         ObjectTools.requireNotEmpty(suppressedFiles, SUPPRESSED_FILES);
         suppressedFiles_.addAll(CollectionTools.combinePathsToFiles(suppressedFiles));
         return this;
@@ -1359,7 +1367,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code suppressedFiles} is empty
      * @see #suppressedFiles(Path...)
      */
-    public final SourceSet suppressedFilesPaths(@NonNull Collection<Path> suppressedFiles) {
+    public final SourceSet suppressedFilesPaths(Collection<Path> suppressedFiles) {
         ObjectTools.requireNotEmpty(suppressedFiles, SUPPRESSED_FILES);
         suppressedFiles_.addAll(CollectionTools.combinePathsToFiles(suppressedFiles));
         return this;
@@ -1376,7 +1384,7 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code suppressedFiles} is empty or contains empty elements
      * @see #suppressedFiles(String...)
      */
-    public final SourceSet suppressedFilesStrings(@NonNull Collection<String> suppressedFiles) {
+    public final SourceSet suppressedFilesStrings(Collection<String> suppressedFiles) {
         ObjectTools.requireNotEmpty(suppressedFiles, SUPPRESSED_FILES);
         suppressedFiles_.addAll(CollectionTools.combineStringsToFiles(suppressedFiles));
         return this;

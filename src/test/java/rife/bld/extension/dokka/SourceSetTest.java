@@ -26,8 +26,8 @@ import org.junit.jupiter.params.provider.EmptySource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import rife.bld.extension.testing.LoggingExtension;
-import rife.bld.extension.testing.TestLogHandler;
+import rife.bld.testing.LoggingExtension;
+import rife.bld.testing.TestLogHandler;
 
 import java.io.File;
 import java.io.IOException;
