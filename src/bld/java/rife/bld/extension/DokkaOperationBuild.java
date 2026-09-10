@@ -54,7 +54,7 @@ public class DokkaOperationBuild extends Project {
                 .include(dependency("org.jetbrains.dokka", "gfm-plugin", dokka))
                 .include(dependency("org.jetbrains.dokka", "jekyll-plugin", dokka))
                 .include(dependency("com.uwyn.rife2", "bld-extensions-tools",
-                        version(1, 3, 0, "SNAPSHOT")))
+                        version(1, 3, 0)))
                 .include(dependency("com.uwyn.rife2", "bld",
                         version(2, 4, 0, "SNAPSHOT")));
         scope(provided)
