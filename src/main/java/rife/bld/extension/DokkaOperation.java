@@ -113,6 +113,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @since 1.5
      */
     @Override
+    @SuppressFBWarnings("EXS_EXCEPTION_SOFTENING_NO_CHECKED")
     protected List<String> executeConstructProcessCommandList() {
         if (project_ == null || outputFormat_ == null || sourceSet_ == null) {
             if (!silent() && logger.isLoggable(Level.WARNING)) {
@@ -272,16 +273,17 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     public DokkaOperation fromProject(BaseProject project) {
         project_ = ObjectTools.requireNonNull(project, "fromProject");
         if (sourceSet_ == null) {
-            sourceSet_ = new SourceSet().src(new File(project.srcMainDirectory(), "kotlin"));
-            if (!project.compileClasspathJars().isEmpty()) {
-                sourceSet_.classpath(project.compileClasspathJars());
-            }
-            if (!project.providedClasspathJars().isEmpty()) {
-                sourceSet_.classpath(project.providedClasspathJars());
+            var src = new File(project.srcMainDirectory(), "kotlin");
+            sourceSet_ = new SourceSet().src(src);
+            var jars = new ArrayList<File>();
+            jars.addAll(project.compileClasspathJars());
+            jars.addAll(project.providedClasspathJars());
+            if (!jars.isEmpty()) {
+                sourceSet_.classpath(jars);
             }
         }
         if (project.javaRelease() != null) {
-            sourceSet_ = sourceSet_.jdkVersion(project.javaRelease());
+            sourceSet_.jdkVersion(project.javaRelease()); // same here, no assignment needed if it returns this
         }
         if (moduleName_ == null) {
             moduleName_ = project.name();
