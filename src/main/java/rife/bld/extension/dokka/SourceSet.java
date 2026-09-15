@@ -38,10 +38,10 @@ import java.util.stream.Collectors;
 @NullMarked
 public class SourceSet {
 
-    private static final String INCLUDES = "includes";
-    private static final String SAMPLES = "samples";
-    private static final String SRC = "src";
-    private static final String SUPPRESSED_FILES = "suppressedFiles";
+    private static final String INCLUDES = "SourceSet includes";
+    private static final String SAMPLES = "SourceSet samples";
+    private static final String SRC = "SourceSet src";
+    private static final String SUPPRESSED_FILES = "SourceSet suppressedFiles";
     private final List<File> classpath_ = new ArrayList<>();
     private final Map<String, String> dependentSourceSets_ = new LinkedHashMap<>();
     private final List<DocumentedVisibility> documentedVisibilities_ = new ArrayList<>();
@@ -75,8 +75,8 @@ public class SourceSet {
      * @return the normalized link
      */
     private static String normalizeSrcLink(String remotePath, String lineSuffix) {
-        ObjectTools.requireNotEmpty(remotePath, "remotePath");
-        ObjectTools.requireNotEmpty(lineSuffix, "lineSuffix");
+        ObjectTools.requireNotEmpty(remotePath, "SourceSet normalize srcLink remotePath");
+        ObjectTools.requireNotEmpty(lineSuffix, "SourceSet normalize srcLink lineSuffix");
 
         var suffix = lineSuffix;
 
@@ -98,7 +98,7 @@ public class SourceSet {
      * @throws NullPointerException if {@code analysisPlatform} is {@code null}
      */
     public SourceSet analysisPlatform(AnalysisPlatform analysisPlatform) {
-        analysisPlatform_ = ObjectTools.requireNonNull(analysisPlatform, "analysisPlatform");
+        analysisPlatform_ = ObjectTools.requireNonNull(analysisPlatform, "SourceSet analysisPlatform");
         return this;
     }
 
@@ -131,7 +131,7 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code apiVersion} is empty
      */
     public SourceSet apiVersion(String apiVersion) {
-        apiVersion_ = ObjectTools.requireNotEmpty(apiVersion, "apiVersion");
+        apiVersion_ = ObjectTools.requireNotEmpty(apiVersion, "SourceSet apiVersion");
         return this;
     }
 
@@ -309,7 +309,7 @@ public class SourceSet {
      * @see #classpath(Collection)
      */
     public SourceSet classpath(File... files) {
-        ObjectTools.requireNotEmpty(files, "classpath files");
+        ObjectTools.requireNotEmpty(files, "SourceSet classpath files");
         classpath_.addAll(List.of(files));
         return this;
     }
@@ -328,7 +328,7 @@ public class SourceSet {
      * @see #classpath(File...)
      */
     public final SourceSet classpath(Collection<File> files) {
-        ObjectTools.requireNotEmpty(files, "classpath");
+        ObjectTools.requireNotEmpty(files, "SourceSet classpath");
         classpath_.addAll(files);
         return this;
     }
@@ -347,7 +347,7 @@ public class SourceSet {
      * @see #classpathStrings(Collection)
      */
     public SourceSet classpath(String... files) {
-        ObjectTools.requireNotEmpty(files, "classpath");
+        ObjectTools.requireNotEmpty(files, "SourceSet classpath");
         classpath_.addAll(CollectionTools.combineStringsToFiles(files));
         return this;
     }
@@ -366,7 +366,7 @@ public class SourceSet {
      * @see #classpathPaths(Collection)
      */
     public SourceSet classpath(Path... files) {
-        ObjectTools.requireNotEmpty(files, "classpath");
+        ObjectTools.requireNotEmpty(files, "SourceSet classpath");
         classpath_.addAll(CollectionTools.combinePathsToFiles(files));
         return this;
     }
@@ -395,7 +395,7 @@ public class SourceSet {
      * @see #classpath(Path...)
      */
     public final SourceSet classpathPaths(Collection<Path> files) {
-        ObjectTools.requireNotEmpty(files, "classpathPaths");
+        ObjectTools.requireNotEmpty(files, "SourceSet classpathPaths");
         classpath_.addAll(CollectionTools.combinePathsToFiles(files));
         return this;
     }
@@ -414,7 +414,7 @@ public class SourceSet {
      * @see #classpath(String...)
      */
     public final SourceSet classpathStrings(Collection<String> files) {
-        ObjectTools.requireNotEmpty(files, "classpathStrings");
+        ObjectTools.requireNotEmpty(files, "SourceSet classpathStrings");
         classpath_.addAll(CollectionTools.combineStringsToFiles(files));
         return this;
     }
@@ -429,8 +429,8 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code moduleName} or {@code sourceSetName} is empty
      */
     public SourceSet dependentSourceSets(String moduleName, String sourceSetName) {
-        ObjectTools.requireNotEmpty(moduleName, "moduleName");
-        ObjectTools.requireNotEmpty(sourceSetName, "sourceSetName");
+        ObjectTools.requireNotEmpty(moduleName, "SourceSet dependent moduleName");
+        ObjectTools.requireNotEmpty(sourceSetName, "SourceSet dependent sourceSetName");
         dependentSourceSets_.put(moduleName, sourceSetName);
         return this;
     }
@@ -455,7 +455,7 @@ public class SourceSet {
      * @see #dependentSourceSets(String, String)
      */
     public SourceSet dependentSourceSets(Map<String, String> dependentSourceSets) {
-        ObjectTools.requireNotEmpty(dependentSourceSets, "dependentSourceSets");
+        ObjectTools.requireNotEmpty(dependentSourceSets, "SourceSet dependentSourceSets");
         dependentSourceSets_.putAll(dependentSourceSets);
         return this;
     }
@@ -474,7 +474,7 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code displayName} is empty
      */
     public SourceSet displayName(String displayName) {
-        displayName_ = ObjectTools.requireNotEmpty(displayName, "displayName");
+        displayName_ = ObjectTools.requireNotEmpty(displayName, "SourceSet displayName");
         return this;
     }
 
@@ -502,7 +502,7 @@ public class SourceSet {
      * @throws IllegalArgumentException If {@code visibilities} is empty
      */
     public SourceSet documentedVisibilities(DocumentedVisibility... visibilities) {
-        ObjectTools.requireNotEmpty(visibilities, "documentedVisibilities");
+        ObjectTools.requireNotEmpty(visibilities, "SourceSet documentedVisibilities");
         documentedVisibilities_.addAll(List.of(visibilities));
         return this;
     }
@@ -529,8 +529,8 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code url} or {@code packageListUrl} is empty
      */
     public SourceSet externalDocumentationLinks(String url, String packageListUrl) {
-        ObjectTools.requireNotEmpty(url, "url");
-        ObjectTools.requireNotEmpty(packageListUrl, "packageListUrl");
+        ObjectTools.requireNotEmpty(url, "SourceSet external documentation url");
+        ObjectTools.requireNotEmpty(packageListUrl, "SourceSet external documentation packageListUrl");
         externalDocumentationLinks_.put(url, packageListUrl);
         return this;
     }
@@ -557,7 +557,7 @@ public class SourceSet {
      * @see #externalDocumentationLinks(String, String)
      */
     public SourceSet externalDocumentationLinks(Map<String, String> externalDocumentationLinks) {
-        ObjectTools.requireNotEmpty(externalDocumentationLinks, "externalDocumentationLinks");
+        ObjectTools.requireNotEmpty(externalDocumentationLinks, "SourceSet externalDocumentationLinks");
         externalDocumentationLinks_.putAll(externalDocumentationLinks);
         return this;
     }
@@ -731,7 +731,7 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code jdkVersion} is empty
      */
     public SourceSet jdkVersion(String jdkVersion) {
-        jdkVersion_ = ObjectTools.requireNotEmpty(jdkVersion, "jdkVersion");
+        jdkVersion_ = ObjectTools.requireNotEmpty(jdkVersion, "SourceSet jdkVersion");
         return this;
     }
 
@@ -754,7 +754,7 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code languageVersion} is empty
      */
     public SourceSet languageVersion(String languageVersion) {
-        languageVersion_ = ObjectTools.requireNotEmpty(languageVersion, "languageVersion");
+        languageVersion_ = ObjectTools.requireNotEmpty(languageVersion, "SourceSet languageVersion");
         return this;
     }
 
@@ -873,7 +873,7 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code perPackageOptions} is empty or contains empty elements
      */
     public SourceSet perPackageOptions(String... perPackageOptions) {
-        ObjectTools.requireNotEmpty(perPackageOptions, "perPackageOptions");
+        ObjectTools.requireNotEmpty(perPackageOptions, "SourceSet perPackageOptions");
         perPackageOptions_.addAll(List.of(perPackageOptions));
         return this;
     }
@@ -900,7 +900,7 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code perPackageOptions} is empty or contains empty elements
      */
     public final SourceSet perPackageOptions(Collection<String> perPackageOptions) {
-        ObjectTools.requireNotEmpty(perPackageOptions, "perPackageOptions");
+        ObjectTools.requireNotEmpty(perPackageOptions, "SourceSet perPackageOptions");
         perPackageOptions_.addAll(perPackageOptions);
         return this;
     }
@@ -1083,7 +1083,7 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code sourceSetName} is empty
      */
     public SourceSet sourceSetName(String sourceSetName) {
-        sourceSetName_ = ObjectTools.requireNotEmpty(sourceSetName, "sourceSetName");
+        sourceSetName_ = ObjectTools.requireNotEmpty(sourceSetName, "SourceSet sourceSetName");
         return this;
     }
 
@@ -1190,9 +1190,9 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code srcPath}, {@code remotePath} or {@code lineSuffix} are empty
      */
     public SourceSet srcLink(File srcPath, String remotePath, String lineSuffix) {
-        ObjectTools.requireNonNull(srcPath, "srcLink srcPath");
-        ObjectTools.requireNotEmpty(remotePath, "srcLink remotePath");
-        ObjectTools.requireNotEmpty(lineSuffix, "srcLink lineSuffix");
+        ObjectTools.requireNonNull(srcPath, "SourceSet srcLink srcPath");
+        ObjectTools.requireNotEmpty(remotePath, "SourceSet srcLink remotePath");
+        ObjectTools.requireNotEmpty(lineSuffix, "SourceSet srcLink lineSuffix");
         srcLinks_.put(srcPath.getAbsolutePath(), normalizeSrcLink(remotePath, lineSuffix));
         return this;
     }
@@ -1208,9 +1208,9 @@ public class SourceSet {
      * @throws IllegalArgumentException if {@code srcPath}, {@code remotePath} or {@code lineSuffix} are empty
      */
     public SourceSet srcLink(String srcPath, String remotePath, String lineSuffix) {
-        ObjectTools.requireNotEmpty(srcPath, "srcPath");
-        ObjectTools.requireNotEmpty(remotePath, "remotePath");
-        ObjectTools.requireNotEmpty(lineSuffix, "lineSuffix");
+        ObjectTools.requireNotEmpty(srcPath, "SourceSet srcLink srcPath");
+        ObjectTools.requireNotEmpty(remotePath, "SourceSet srcLink remotePath");
+        ObjectTools.requireNotEmpty(lineSuffix, "SourceSet srcLink lineSuffix");
         srcLinks_.put(srcPath, normalizeSrcLink(remotePath, lineSuffix));
         return this;
     }
@@ -1225,9 +1225,9 @@ public class SourceSet {
      * @throws NullPointerException if {@code srcPath}, {@code remotePath} or {@code lineSuffix} are {@code null}
      */
     public SourceSet srcLink(Path srcPath, String remotePath, String lineSuffix) {
-        ObjectTools.requireNonNull(srcPath, "srcPath");
-        ObjectTools.requireNotEmpty(remotePath, "remotePath");
-        ObjectTools.requireNotEmpty(lineSuffix, "lineSuffix");
+        ObjectTools.requireNonNull(srcPath, "SourceSet srcLink srcPath");
+        ObjectTools.requireNotEmpty(remotePath, "SourceSet srcLink remotePath");
+        ObjectTools.requireNotEmpty(lineSuffix, "SourceSet srcLink lineSuffix");
         srcLinks_.put(srcPath.toFile().getAbsolutePath(), normalizeSrcLink(remotePath, lineSuffix));
         return this;
     }
