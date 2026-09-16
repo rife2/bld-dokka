@@ -113,6 +113,8 @@ class DokkaOperationTest {
                     .globalPackageOptions(List.of(OPTION_3, OPTION_4))
                     .globalSrcLink("link1", "link2")
                     .globalSrcLink(List.of("link3", "link4"))
+                    .globalSuppressAnnotatedWith("foo.bar", "foo.baz")
+                    .globalSuppressAnnotatedWith(List.of("bar.foo", "baz.foo"))
                     .includes(new File(FILE_1))
                     .includes(FILE_2)
                     .includes(List.of(new File(FILE_3), new File(FILE_4)))
@@ -144,6 +146,8 @@ class DokkaOperationTest {
                 softly.assertThat(op.globalLinks()).as("globalLinks").hasSize(2);
                 softly.assertThat(op.globalPackageOptions()).as("globalPackageOptions").hasSize(4);
                 softly.assertThat(op.globalSrcLink()).as("globalSrcLink").hasSize(4);
+                softly.assertThat(op.globalSuppressAnnotatedWith()).as("globalSuppressAnnotatedWith")
+                        .hasSize(4);
                 softly.assertThat(op.includes()).as("includes").hasSize(4);
                 softly.assertThat(op.pluginConfigurations()).as("pluginConfigurations").hasSize(2);
                 softly.assertThat(op.pluginsClasspath()).as("pluginsClasspath").hasSize(4);
@@ -164,7 +168,7 @@ class DokkaOperationTest {
             }
 
             var path = EXAMPLES.getAbsolutePath();
-            var dokkaJar = "2.2.0.jar";
+            var dokkaJar = "2.3.0-Beta.jar";
             var matches = List.of("java",
                     "-cp", path + "/lib/bld/dokka-cli-" + dokkaJar,
                     "org.jetbrains.dokka.MainKt",
@@ -182,6 +186,8 @@ class DokkaOperationTest {
                     "-globalLinks", "s^gLink1^^s2^gLink2",
                     "-globalPackageOptions", OPTION_1 + ';' + OPTION_2 + ';' + OPTION_3 + ';' + OPTION_4,
                     "-globalSrcLinks", "link1;link2;link3;link4",
+                    "-globalSuppressAnnotatedWith",
+                    "foo.bar;foo.baz;bar.foo;baz.foo",
                     "-includes", TestUtils.localPath(FILE_1, FILE_2, FILE_3, FILE_4),
                     "-loggingLevel", "debug",
                     "-moduleName", "name",
@@ -289,8 +295,8 @@ class DokkaOperationTest {
 
             @Test
             void jsonAsFile() {
-                op.json(new File(FILE_3));
-                assertThat(op.json()).isEqualTo(new File(FILE_3));
+                var newOp = op.json(new File(FILE_3));
+                assertThat(newOp.json()).isEqualTo(new File(FILE_3));
             }
 
             @Test

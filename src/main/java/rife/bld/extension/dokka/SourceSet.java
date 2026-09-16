@@ -51,6 +51,7 @@ public class SourceSet {
     private final List<File> samples_ = new ArrayList<>();
     private final Map<String, String> srcLinks_ = new LinkedHashMap<>();
     private final List<File> src_ = new ArrayList<>();
+    private final List<String> suppressAnnotatedWith_ = new ArrayList<>();
     private final List<File> suppressedFiles_ = new ArrayList<>();
     private @Nullable AnalysisPlatform analysisPlatform_;
     private @Nullable String apiVersion_;
@@ -284,6 +285,12 @@ public class SourceSet {
             args.add(sourceSetName_);
         }
 
+        // -suppressAnnotatedWith
+        if (!suppressAnnotatedWith_.isEmpty()) {
+            args.add("-suppressAnnotatedWith");
+            args.add(String.join(DokkaOperation.DOKKA_LIST_SEPARATOR, suppressAnnotatedWith_));
+        }
+
         // -suppressedFiles
         if (!suppressedFiles_.isEmpty()) {
             args.add("-suppressedFiles");
@@ -291,6 +298,7 @@ public class SourceSet {
                     .map(File::getAbsolutePath)
                     .collect(Collectors.joining(DokkaOperation.DOKKA_LIST_SEPARATOR)));
         }
+
 
         return args;
     }
@@ -1275,6 +1283,44 @@ public class SourceSet {
     public final SourceSet srcStrings(Collection<String> src) {
         ObjectTools.requireNotEmpty(src, SRC);
         src_.addAll(CollectionTools.combineStringsToFiles(src));
+        return this;
+    }
+
+    /**
+     * Retrieves the annotation fully qualified names (FQNs) to suppress declarations annotated with.
+     *
+     * @return the annotations
+     */
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public List<String> suppressAnnotatedWith() {
+        return suppressAnnotatedWith_;
+    }
+
+    /**
+     * Sets the annotation fully qualified names (FQNs) to suppress declarations annotated with.
+     *
+     * @param annotations one or more annotation
+     * @return this operation instance
+     * @throws NullPointerException     if {@code annotations} is {@code null} or contain {@code null} elements
+     * @throws IllegalArgumentException if {@code annotations} is empty or contains blank elements
+     */
+    public SourceSet suppressAnnotatedWith(String... annotations) {
+        TextTools.requireNotBlank("SourceSet suppressAnnotatedWith", annotations);
+        suppressAnnotatedWith_.addAll(List.of(annotations));
+        return this;
+    }
+
+    /**
+     * Sets the annotation fully qualified names (FQNs) to suppress declarations annotated with.
+     *
+     * @param annotations the annotations
+     * @return this operation instance
+     * @throws NullPointerException     if {@code annotations} is {@code null} or contain {@code null} elements
+     * @throws IllegalArgumentException if {@code annotations} is empty or contains blank elements
+     */
+    public final SourceSet suppressAnnotatedWith(Collection<String> annotations) {
+        TextTools.requireNotBlank(annotations, "SourceSet suppressAnnotatedWith");
+        suppressAnnotatedWith_.addAll(annotations);
         return this;
     }
 

@@ -70,6 +70,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     private final Map<String, String> globalLinks_ = new LinkedHashMap<>();
     private final List<String> globalPackageOptions_ = new ArrayList<>();
     private final List<String> globalSrcLinks_ = new ArrayList<>();
+    private final List<String> globalSuppressAnnotatedWith_ = new ArrayList<>();
     private final List<File> includes_ = new ArrayList<>();
     private final List<File> pluginsClasspath_ = new ArrayList<>();
     private final Map<String, String> pluginsConfiguration_ = new LinkedHashMap<>();
@@ -200,6 +201,12 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         if (!globalSrcLinks_.isEmpty()) {
             args.add("-globalSrcLinks");
             args.add(String.join(DOKKA_LIST_SEPARATOR, globalSrcLinks_));
+        }
+
+        // -globalSuppressAnnotatedWith
+        if (!globalSuppressAnnotatedWith_.isEmpty()) {
+            args.add("-globalSuppressAnnotatedWith");
+            args.add(String.join(DOKKA_LIST_SEPARATOR, globalSuppressAnnotatedWith_));
         }
 
         // -includes
@@ -490,6 +497,44 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     @SuppressFBWarnings("EI_EXPOSE_REP")
     public List<String> globalSrcLink() {
         return globalSrcLinks_;
+    }
+
+    /**
+     * Retrieves the global list of annotation FQNs to suppress declarations annotated with.
+     *
+     * @return the annotations
+     */
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public List<String> globalSuppressAnnotatedWith() {
+        return globalSuppressAnnotatedWith_;
+    }
+
+    /**
+     * Set the global list of annotation FQNs to suppress declarations annotated with.
+     *
+     * @param annotations the annotations
+     * @return this operation instance
+     * @throws NullPointerException     if {@code annotations} is {@code null}
+     * @throws IllegalArgumentException if {@code annotations} is empty or contains {@code null} or blank elements
+     */
+    public final DokkaOperation globalSuppressAnnotatedWith(Collection<String> annotations) {
+        TextTools.requireNotBlank(annotations, "globalSuppressAnnotatedWith");
+        globalSuppressAnnotatedWith_.addAll(annotations);
+        return this;
+    }
+
+    /**
+     * Global list of annotation FQNs to suppress declarations annotated with.
+     *
+     * @param annotations one or more annotation
+     * @return this operation instance
+     * @throws NullPointerException     if {@code annotations} is {@code null} or contains {@code null} elements
+     * @throws IllegalArgumentException if {@code annoations} is empty or contains blank elements
+     */
+    public DokkaOperation globalSuppressAnnotatedWith(String... annotations) {
+        TextTools.requireNotBlank("globalSuppressAnnotatedWith", annotations);
+        globalSuppressAnnotatedWith_.addAll(List.of(annotations));
+        return this;
     }
 
     /**

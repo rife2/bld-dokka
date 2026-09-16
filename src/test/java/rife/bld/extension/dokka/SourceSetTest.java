@@ -116,18 +116,24 @@ class SourceSetTest {
                 .srcLink(PATH_1, "remote1", "#suffix1")
                 .srcLink(new File(PATH_2), "remote2", "#suffix2")
                 .srcLink(Path.of(PATH_3), "remote3", "#suffix3")
+                .suppressAnnotatedWith("ann1", "ann2")
+                .suppressAnnotatedWith(List.of("ann3", "ann4"))
                 .suppressedFiles(SUP_1, SUP_2);
 
         try (var softly = new AutoCloseableSoftAssertions()) {
             softly.assertThat(sourceSet.classpath()).as("classpath").hasSize(2);
             softly.assertThat(sourceSet.dependentSourceSets()).as("dependentSourceSets").hasSize(2);
-            softly.assertThat(sourceSet.documentedVisibilities()).as("documentedVisibilities").hasSize(2);
-            softly.assertThat(sourceSet.externalDocumentationLinks()).as("externalDocumentationLinks").hasSize(2);
+            softly.assertThat(sourceSet.documentedVisibilities()).as("documentedVisibilities")
+                    .hasSize(2);
+            softly.assertThat(sourceSet.externalDocumentationLinks()).as("externalDocumentationLinks")
+                    .hasSize(2);
             softly.assertThat(sourceSet.includes()).as("includes").hasSize(4);
             softly.assertThat(sourceSet.perPackageOptions()).as("perPackageOptions").hasSize(2);
             softly.assertThat(sourceSet.samples()).as("samples").hasSize(2);
             softly.assertThat(sourceSet.src()).as("src").hasSize(4);
             softly.assertThat(sourceSet.srcLinks()).as("srcLinks").hasSize(3);
+            softly.assertThat(sourceSet.suppressAnnotatedWith()).as("suppressAnnotatedWith")
+                    .hasSize(4);
             softly.assertThat(sourceSet.suppressedFiles()).as("suppressedFiles").hasSize(2);
         }
 
@@ -168,6 +174,7 @@ class SourceSetTest {
                 "-srcLink", "path1=remote1#suffix1" + ';' + localPath(PATH_2) + "=remote2#suffix2;" + localPath(PATH_3)
                         + "=remote3#suffix3",
                 "-sourceSetName", "setName",
+                "-suppressAnnotatedWith", "ann1;ann2;ann3;ann4",
                 "-suppressedFiles", localPath(SUP_1, SUP_2));
 
         assertThat(params).hasSize(matches.size());
