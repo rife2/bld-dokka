@@ -129,7 +129,14 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         // java
         args.add(javaTool());
 
-        var jarList = project_.extensionClasspathJars("org.jetbrains.dokka", "dokka-cli");
+        var jarList = new ArrayList<File>();
+
+        jarList.addAll(project_.extensionClasspathJars("org.jetbrains.dokka", "dokka-cli"));
+        jarList.addAll(project_.extensionClasspathJars("org.jetbrains.dokka", "dokka-base"));
+        jarList.addAll(project_.extensionClasspathJars("org.jetbrains.dokka", "analysis-kotlin-symbols"));
+        jarList.addAll(project_.extensionClasspathJars("org.jetbrains.dokka", "gfm-plugin"));
+        jarList.addAll(project_.extensionClasspathJars("org.jetbrains.dokka", "jekyll-plugin"));
+
         if (!jarList.isEmpty()) {
             // class path
             args.add("-cp");
