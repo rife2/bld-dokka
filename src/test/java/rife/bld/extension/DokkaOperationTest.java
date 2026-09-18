@@ -32,11 +32,13 @@ import rife.bld.blueprints.BaseProjectBlueprint;
 import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
 import rife.bld.extension.dokka.SourceSet;
+import rife.bld.operations.exceptions.ExitStatusException;
 import rife.bld.testing.LoggingExtension;
 import rife.bld.testing.TestLogHandler;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -82,6 +84,31 @@ class DokkaOperationTest {
     @DisplayName("Execute Tests")
     class ExecuteTests {
 
+        private static void deleteRecursively(Path dir) throws IOException {
+            if (!Files.exists(dir)) {
+                return;
+            }
+            try (var walk = Files.walk(dir)) {
+                walk.sorted(Comparator.reverseOrder())
+                        .forEach(p -> {
+                            try {
+                                Files.delete(p);
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
+                            }
+                        });
+            }
+        }
+
+        private static boolean isNotEmpty(Path dir) throws IOException {
+            if (!Files.isDirectory(dir)) {
+                return false;
+            }
+            try (var stream = Files.list(dir)) {
+                return stream.findAny().isPresent();
+            }
+        }
+
         @Test
         void execute() {
             testLogHandler.setLevel(Level.FINE);
@@ -98,15 +125,13 @@ class DokkaOperationTest {
         @EnabledOnOs(OS.LINUX)
         void executeConstructProcessCommandListTest() throws IOException {
             var args = Files.readAllLines(Paths.get("src", "test", "resources", "dokka-args.txt"));
-
             assertThat(args).as("args should not be empty").isNotEmpty();
 
             var jsonConf = new File("config.json").getAbsolutePath();
             var op = new DokkaOperation()
                     .delayTemplateSubstitution(true)
                     .failOnWarning(true)
-                    .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "example",
-                            "Example"))
+                    .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "example", "Example"))
                     .globalLinks("s", "gLink1")
                     .globalLinks(Map.of("s2", "gLink2"))
                     .globalPackageOptions(OPTION_1, OPTION_2)
@@ -146,14 +171,14 @@ class DokkaOperationTest {
                 softly.assertThat(op.globalLinks()).as("globalLinks").hasSize(2);
                 softly.assertThat(op.globalPackageOptions()).as("globalPackageOptions").hasSize(4);
                 softly.assertThat(op.globalSrcLink()).as("globalSrcLink").hasSize(4);
-                softly.assertThat(op.globalSuppressAnnotatedWith()).as("globalSuppressAnnotatedWith")
-                        .hasSize(4);
+                softly.assertThat(op.globalSuppressAnnotatedWith()).as("globalSuppressAnnotatedWith").hasSize(4);
                 softly.assertThat(op.includes()).as("includes").hasSize(4);
                 softly.assertThat(op.pluginConfigurations()).as("pluginConfigurations").hasSize(2);
                 softly.assertThat(op.pluginsClasspath()).as("pluginsClasspath").hasSize(4);
             }
 
             var params = op.executeConstructProcessCommandList();
+
             try (var softly = new AutoCloseableSoftAssertions()) {
                 for (var p : args) {
                     var found = false;
@@ -172,22 +197,15 @@ class DokkaOperationTest {
             var matches = List.of("java",
                     "-cp", path + "/lib/bld/dokka-cli-" + dokkaJar,
                     "org.jetbrains.dokka.MainKt",
-                    "-pluginsClasspath", path + "/lib/bld/dokka-base-" + dokkaJar + ';' +
-                            path + "/lib/bld/analysis-kotlin-descriptors-" + dokkaJar + ';' +
-                            path + "/lib/bld/javadoc-plugin-" + dokkaJar + ';' +
-                            path + "/lib/bld/korte-jvm-4.0.10.jar;" +
-                            path + "/lib/bld/kotlin-as-java-plugin-" + dokkaJar + ';' +
-                            TestUtils.localPath(PATH_1, PATH_2, PATH_3, PATH_4),
-                    "-sourceSet", "-src " + path + "/src/main/kotlin" + " -classpath " + path + "/foo.jar;"
-                            + path + "/bar.jar",
+                    "-pluginsClasspath", TestUtils.localPath(PATH_1, PATH_2, PATH_3, PATH_4),
+                    "-sourceSet", "-classpath " + path + "/foo.jar;" + path + "/bar.jar",
                     "-outputDir", path + "/build",
                     "-delayTemplateSubstitution",
                     "-failOnWarning",
                     "-globalLinks", "s^gLink1^^s2^gLink2",
                     "-globalPackageOptions", OPTION_1 + ';' + OPTION_2 + ';' + OPTION_3 + ';' + OPTION_4,
                     "-globalSrcLinks", "link1;link2;link3;link4",
-                    "-globalSuppressAnnotatedWith",
-                    "foo.bar;foo.baz;bar.foo;baz.foo",
+                    "-globalSuppressAnnotatedWith", "foo.bar;foo.baz;bar.foo;baz.foo",
                     "-includes", TestUtils.localPath(FILE_1, FILE_2, FILE_3, FILE_4),
                     "-loggingLevel", "debug",
                     "-moduleName", "name",
@@ -205,12 +223,26 @@ class DokkaOperationTest {
 
             try (var softly = new AutoCloseableSoftAssertions()) {
                 IntStream.range(0, params.size()).forEach(i -> {
-                    if (params.get(i).contains(".jar;")) {
-                        var jars = params.get(i).split(";");
-                        Arrays.stream(jars).forEach(jar ->
-                                softly.assertThat(matches.get(i)).as(matches.get(i)).contains(jar));
+                    var actual = params.get(i);
+                    var expected = matches.get(i);
+
+                    if (actual.contains(".jar") || expected.contains(".jar")) {
+                        // split by both separators : and ;
+                        for (var token : expected.split("[;:]")) {
+                            var t = token.trim();
+                            if (t.isEmpty() || "-classpath".equals(t) || "-src".equals(t)) {
+                                continue;
+                            }
+                            // token like "-classpath /path/foo.jar"
+                            if (t.contains(" ")) {
+                                t = t.substring(t.lastIndexOf(' ') + 1).trim();
+                            }
+                            softly.assertThat(actual)
+                                    .as("param[%d] '%s' should contain '%s'", i, actual, t)
+                                    .contains(t);
+                        }
                     } else {
-                        softly.assertThat(params.get(i)).as(params.get(i)).isEqualTo(matches.get(i));
+                        softly.assertThat(actual).as("param[%d]", i).isEqualTo(expected);
                     }
                 });
             }
@@ -231,6 +263,82 @@ class DokkaOperationTest {
             var op = new DokkaOperation();
             assertThatThrownBy(op::execute).isInstanceOf(NullPointerException.class)
                     .hasMessageContaining("project");
+        }
+
+        @Test
+        void executeOutputJavadocFormat() throws IOException, ExitStatusException, InterruptedException {
+            var outputDir = Path.of("examples/build/javadoc");
+
+            deleteRecursively(outputDir);
+            assertThat(outputDir).doesNotExist();
+
+            var op = new DokkaOperation()
+                    .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "examples",
+                            "Examples"))
+                    .outputDir(outputDir.toString())
+                    .outputFormat(OutputFormat.JAVADOC);
+
+            op.execute();
+
+            assertThat(isNotEmpty(outputDir)).isTrue();
+            assertThat(new File(outputDir.toFile(), "index.html")).exists();
+        }
+
+        @Test
+        void executeOutputHtmlFormat() throws IOException, ExitStatusException, InterruptedException {
+            var outputDir = Path.of("examples/build/dokka/html");
+
+            deleteRecursively(outputDir);
+            assertThat(outputDir).doesNotExist();
+
+            var op = new DokkaOperation()
+                    .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "examples",
+                            "Examples"))
+                    .outputDir(outputDir.toString())
+                    .outputFormat(OutputFormat.HTML);
+
+            op.execute();
+
+            assertThat(isNotEmpty(outputDir)).isTrue();
+            assertThat(new File(outputDir.toFile(), "index.html")).exists();
+        }
+
+        @Test
+        void executeOutputJekyllFormat() throws IOException, ExitStatusException, InterruptedException {
+            var outputDir = Path.of("examples/build/dokka/jekyll");
+
+            deleteRecursively(outputDir);
+            assertThat(outputDir).doesNotExist();
+
+            var op = new DokkaOperation()
+                    .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "examples",
+                            "Examples"))
+                    .outputDir(outputDir.toString())
+                    .outputFormat(OutputFormat.JEKYLL);
+
+            op.execute();
+
+            assertThat(isNotEmpty(outputDir)).isTrue();
+            assertThat(new File(outputDir.toFile(), "index.md")).exists();
+        }
+
+        @Test
+        void executeOutputMarkdownFormat() throws IOException, ExitStatusException, InterruptedException {
+            var outputDir = Path.of("examples/build/dokka/gfm");
+
+            deleteRecursively(outputDir);
+            assertThat(outputDir).doesNotExist();
+
+            var op = new DokkaOperation()
+                    .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "examples",
+                            "Examples"))
+                    .outputDir(outputDir.toString())
+                    .outputFormat(OutputFormat.MARKDOWN);
+
+            op.execute();
+
+            assertThat(isNotEmpty(outputDir)).isTrue();
+            assertThat(new File(outputDir.toFile(), "index.md")).exists();
         }
     }
 

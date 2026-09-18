@@ -53,15 +53,8 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * Separator used by Dokka CLI between list items in a single argument value.
      */
     public static final String DOKKA_LIST_SEPARATOR = ";";
-    private static final String GFM_PLUGIN_REGEXP =
-            "^.*(dokka-base|analysis-kotlin-descriptors|gfm-plugin|freemarker).*\\.jar$";
-    private static final String HTML_PLUGIN_REGEXP =
-            "^.*(dokka-base|analysis-kotlin-descriptors|kotlinx-html-jvm|freemarker).*\\.jar$";
+    private static final String DOKKA_GID = "org.jetbrains.dokka";
     private static final String INCLUDES = "includes";
-    private static final String JAVADOC_PLUGIN_REGEXP =
-            "^.*(dokka-base|analysis-kotlin-descriptors|javadoc-plugin|kotlin-as-java-plugin|korte-jvm).*\\.jar$";
-    private static final String JEKYLL_PLUGIN_REGEXP =
-            "^.*(dokka-base|analysis-kotlin-descriptors|jekyll-plugin|gfm-plugin|freemarker).*\\.jar$";
     private static final String PLUGINS_CLASSPATH = "pluginsClasspath";
     private static final Logger logger = Logger.getLogger(DokkaOperation.class.getName());
 
@@ -131,11 +124,24 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
 
         var jarList = new ArrayList<File>();
 
-        jarList.addAll(project_.extensionClasspathJars("org.jetbrains.dokka", "dokka-cli"));
-        jarList.addAll(project_.extensionClasspathJars("org.jetbrains.dokka", "dokka-base"));
-        jarList.addAll(project_.extensionClasspathJars("org.jetbrains.dokka", "analysis-kotlin-symbols"));
-        jarList.addAll(project_.extensionClasspathJars("org.jetbrains.dokka", "gfm-plugin"));
-        jarList.addAll(project_.extensionClasspathJars("org.jetbrains.dokka", "jekyll-plugin"));
+        jarList.addAll(project_.extensionClasspathJars(DOKKA_GID, "dokka-cli"));
+        jarList.addAll(project_.extensionClasspathJars(DOKKA_GID, "analysis-kotlin-symbols"));
+        jarList.addAll(project_.extensionClasspathJars(DOKKA_GID, "dokka-base"));
+
+        switch (outputFormat_) {
+            case JAVADOC -> jarList.addAll(
+                    project_.extensionClasspathJars(DOKKA_GID, "javadoc-plugin"));
+            case JEKYLL -> {
+                jarList.addAll(
+                        project_.extensionClasspathJars(DOKKA_GID, "gfm-plugin"));
+                jarList.addAll(
+                        project_.extensionClasspathJars(DOKKA_GID, "jekyll-plugin"));
+            }
+            case MARKDOWN -> jarList.addAll(
+                    project_.extensionClasspathJars(DOKKA_GID, "gfm-plugin"));
+            default -> {
+            } // HTML and any future formats need no extra plugin
+        }
 
         if (!jarList.isEmpty()) {
             // class path
@@ -147,16 +153,10 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         args.add("org.jetbrains.dokka.MainKt");
 
         // -pluginClasspath
-        var classPath = new ArrayList<>(pluginsClasspath_);
-        switch (outputFormat_) {
-            case HTML -> classPath.addAll(getJarList(project_.libBldDirectory(), HTML_PLUGIN_REGEXP));
-            case MARKDOWN -> classPath.addAll(getJarList(project_.libBldDirectory(), GFM_PLUGIN_REGEXP));
-            case JEKYLL -> classPath.addAll(getJarList(project_.libBldDirectory(), JEKYLL_PLUGIN_REGEXP));
-            default -> classPath.addAll(getJarList(project_.libBldDirectory(), JAVADOC_PLUGIN_REGEXP));
-        }
-        if (!classPath.isEmpty()) {
+        if (!pluginsClasspath_.isEmpty()) {
             args.add("-pluginsClasspath");
-            args.add(classPath.stream().map(File::getAbsolutePath).collect(Collectors.joining(DOKKA_LIST_SEPARATOR)));
+            args.add(pluginsClasspath_.stream().map(File::getAbsolutePath).collect(
+                    Collectors.joining(DOKKA_LIST_SEPARATOR)));
         } else if (logger.isLoggable(Level.SEVERE) && !silent()) {
             logger.severe("No valid plugins jars found or specified.");
         }
@@ -303,39 +303,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
             moduleName_ = project.name();
         }
         return this;
-    }
-
-    /**
-     * Returns the JARs contained in a given directory.
-     * <p>
-     * Sources and Javadoc JARs are ignored.
-     * <p>
-     * Package-private to allow direct unit testing without subclassing.
-     *
-     * @param directory the directory
-     * @param regex     the regular expression to match
-     * @return the Java Archives
-     */
-    static List<File> getJarList(File directory, String regex) {
-        var jars = new ArrayList<File>();
-
-        if (directory.isDirectory()) {
-            var files = directory.listFiles();
-            if (files != null) {
-                for (var f : files) {
-                    if (!f.getName().endsWith("-sources.jar")
-                            && !f.getName().endsWith("-javadoc.jar")
-                            && !f.getName().contains("-test")
-                            && !f.getName().contains("-kjs")
-                            && f.getName().matches(regex)) {
-                        jars.add(f);
-                    }
-                }
-                jars.sort(Comparator.comparing(File::getName));
-            }
-        }
-
-        return jars;
     }
 
     /**
