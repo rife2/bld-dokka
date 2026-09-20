@@ -31,7 +31,6 @@ import org.junit.jupiter.params.provider.NullSource;
 import rife.bld.blueprints.BaseProjectBlueprint;
 import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
-import rife.bld.extension.dokka.SourceSet;
 import rife.bld.operations.exceptions.ExitStatusException;
 import rife.bld.testing.LoggingExtension;
 import rife.bld.testing.TestLogHandler;
@@ -50,7 +49,6 @@ import java.util.stream.IntStream;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 
 @ExtendWith(LoggingExtension.class)
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
@@ -110,14 +108,23 @@ class DokkaOperationTest {
         }
 
         @Test
-        void execute() {
+        void execute() throws IOException, ExitStatusException, InterruptedException {
             testLogHandler.setLevel(Level.FINE);
+            var outputDir = Path.of("examples/build/javadoc");
+
+            deleteRecursively(outputDir);
+            assertThat(outputDir).doesNotExist();
+
             var op = new DokkaOperation()
                     .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "examples",
                             "Examples"))
-                    .outputDir("build/javadoc")
+                    .outputDir(outputDir.toString())
                     .outputFormat(OutputFormat.JAVADOC);
-            assertThatCode(op::execute).doesNotThrowAnyException();
+
+            op.execute();
+
+            assertThat(isNotEmpty(outputDir)).isTrue();
+            assertThat(new File(outputDir.toFile(), "index.html")).exists();
             testLogHandler.printLogMessages();
         }
 
@@ -160,12 +167,13 @@ class DokkaOperationTest {
                     .pluginsClasspath(new File(PATH_1))
                     .pluginsClasspath(PATH_2)
                     .pluginsClasspath(List.of(new File(PATH_3), new File(PATH_4)))
-                    .sourceSet(new SourceSet().classpath(
-                            List.of(
-                                    new File("examples/foo.jar"),
-                                    new File("examples/bar.jar")
-                            )))
                     .suppressInheritedMembers(true);
+
+            op.sourceSet().classpath(
+                    List.of(
+                            new File("examples/foo.jar"),
+                            new File("examples/bar.jar")
+                    ));
 
             try (var softly = new AutoCloseableSoftAssertions()) {
                 softly.assertThat(op.globalLinks()).as("globalLinks").hasSize(2);
@@ -193,9 +201,9 @@ class DokkaOperationTest {
             }
 
             var path = EXAMPLES.getAbsolutePath();
-            var dokkaJar = "2.3.0-Beta.jar";
+            var dokkaJar = DokkaOperation.DOKKA_VERSION + ".jar";
             var matches = List.of("java",
-                    "-cp", path + "/lib/bld/dokka-cli-" + dokkaJar,
+                    "-cp", "examples/lib/bld/.sandbox/bld-dokka/javadoc-plugin/dokka-cli-" + dokkaJar,
                     "org.jetbrains.dokka.MainKt",
                     "-pluginsClasspath", TestUtils.localPath(PATH_1, PATH_2, PATH_3, PATH_4),
                     "-sourceSet", "-classpath " + path + "/foo.jar;" + path + "/bar.jar",
@@ -266,26 +274,8 @@ class DokkaOperationTest {
         }
 
         @Test
-        void executeOutputJavadocFormat() throws IOException, ExitStatusException, InterruptedException {
-            var outputDir = Path.of("examples/build/javadoc");
-
-            deleteRecursively(outputDir);
-            assertThat(outputDir).doesNotExist();
-
-            var op = new DokkaOperation()
-                    .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "examples",
-                            "Examples"))
-                    .outputDir(outputDir.toString())
-                    .outputFormat(OutputFormat.JAVADOC);
-
-            op.execute();
-
-            assertThat(isNotEmpty(outputDir)).isTrue();
-            assertThat(new File(outputDir.toFile(), "index.html")).exists();
-        }
-
-        @Test
         void executeOutputHtmlFormat() throws IOException, ExitStatusException, InterruptedException {
+            testLogHandler.setLevel(Level.FINE);
             var outputDir = Path.of("examples/build/dokka/html");
 
             deleteRecursively(outputDir);
@@ -301,6 +291,7 @@ class DokkaOperationTest {
 
             assertThat(isNotEmpty(outputDir)).isTrue();
             assertThat(new File(outputDir.toFile(), "index.html")).exists();
+            testLogHandler.printLogMessages();
         }
 
         @Test
@@ -310,13 +301,12 @@ class DokkaOperationTest {
             deleteRecursively(outputDir);
             assertThat(outputDir).doesNotExist();
 
-            var op = new DokkaOperation()
+            new DokkaOperation()
                     .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "examples",
                             "Examples"))
                     .outputDir(outputDir.toString())
-                    .outputFormat(OutputFormat.JEKYLL);
-
-            op.execute();
+                    .outputFormat(OutputFormat.JEKYLL)
+                    .execute();
 
             assertThat(isNotEmpty(outputDir)).isTrue();
             assertThat(new File(outputDir.toFile(), "index.md")).exists();
@@ -690,7 +680,6 @@ class DokkaOperationTest {
         void executeRequiresProject() {
             assertThatThrownBy(() -> new DokkaOperation()
                     .outputFormat(OutputFormat.HTML)
-                    .sourceSet(new SourceSet())
                     .execute())
                     .isInstanceOf(NullPointerException.class)
                     .hasMessageContaining("project");

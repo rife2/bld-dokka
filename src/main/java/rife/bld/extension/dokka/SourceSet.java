@@ -701,6 +701,36 @@ public class SourceSet {
     }
 
     /**
+     * Checks if this source set configuration is empty.
+     *
+     * @return {@code true} if no options are set, {@code false} otherwise
+     */
+    public boolean isEmpty() {
+        return classpath_.isEmpty()
+                && dependentSourceSets_.isEmpty()
+                && documentedVisibilities_.isEmpty()
+                && externalDocumentationLinks_.isEmpty()
+                && includes_.isEmpty()
+                && perPackageOptions_.isEmpty()
+                && samples_.isEmpty()
+                && srcLinks_.isEmpty()
+                && src_.isEmpty()
+                && suppressAnnotatedWith_.isEmpty()
+                && suppressedFiles_.isEmpty()
+                && analysisPlatform_ == null
+                && apiVersion_ == null
+                && displayName_ == null
+                && jdkVersion_ == null
+                && languageVersion_ == null
+                && sourceSetName_ == null
+                && !noJdkLink_
+                && !noSkipEmptyPackages_
+                && !noStdlibLink_
+                && !reportUndocumented_
+                && !skipDeprecated_;
+    }
+
+    /**
      * Retrieves the version of the JDK to use for linking to JDK Javadocs.
      *
      * @return the JDK version.

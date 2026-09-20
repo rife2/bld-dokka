@@ -20,6 +20,10 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import rife.bld.BaseProject;
+import rife.bld.dependencies.Dependency;
+import rife.bld.dependencies.Repository;
+import rife.bld.dependencies.Version;
+import rife.bld.dependencies.VersionNumber;
 import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
 import rife.bld.extension.dokka.SourceSet;
@@ -53,11 +57,14 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * Separator used by Dokka CLI between list items in a single argument value.
      */
     public static final String DOKKA_LIST_SEPARATOR = ";";
-    private static final String DOKKA_GID = "org.jetbrains.dokka";
+    /**
+     * The Dokka version.
+     */
+    public static final Version DOKKA_VERSION = new VersionNumber(2, 2, 0);
     private static final String INCLUDES = "includes";
     private static final String PLUGINS_CLASSPATH = "pluginsClasspath";
+    private static final List<Repository> REPOSITORIES = List.of(Repository.MAVEN_CENTRAL);
     private static final Logger logger = Logger.getLogger(DokkaOperation.class.getName());
-
     // LinkedHashMap preserves insertion order for deterministic CLI output; single-threaded builder usage
     // does not require ConcurrentHashMap here.
     private final Map<String, String> globalLinks_ = new LinkedHashMap<>();
@@ -78,7 +85,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     private @Nullable File outputDir_;
     private @Nullable OutputFormat outputFormat_;
     private @Nullable BaseProject project_;
-    private @Nullable SourceSet sourceSet_;
+    private SourceSet sourceSet_ = new SourceSet();
     private boolean suppressInheritedMembers_;
 
     /**
@@ -109,7 +116,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     @Override
     @SuppressFBWarnings("EXS_EXCEPTION_SOFTENING_NO_CHECKED")
     protected List<String> executeConstructProcessCommandList() {
-        if (project_ == null || outputFormat_ == null || sourceSet_ == null) {
+        if (project_ == null || outputFormat_ == null || sourceSet_.isEmpty()) {
             if (!silent() && logger.isLoggable(Level.WARNING)) {
                 logger.warning("Missing required fields: project=" + project_ + ", outputFormat=" + outputFormat_
                         + ", sourceSet=" + sourceSet_);
@@ -122,31 +129,25 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         // java
         args.add(javaTool());
 
-        var jarList = new ArrayList<File>();
+        var sandbox = new Sandbox("bld-dokka", project_);
 
-        jarList.addAll(project_.extensionClasspathJars(DOKKA_GID, "dokka-cli"));
-        jarList.addAll(project_.extensionClasspathJars(DOKKA_GID, "analysis-kotlin-symbols"));
-        jarList.addAll(project_.extensionClasspathJars(DOKKA_GID, "dokka-base"));
-
+        Path dokkaPlugin;
         switch (outputFormat_) {
-            case JAVADOC -> jarList.addAll(
-                    project_.extensionClasspathJars(DOKKA_GID, "javadoc-plugin"));
-            case JEKYLL -> {
-                jarList.addAll(
-                        project_.extensionClasspathJars(DOKKA_GID, "gfm-plugin"));
-                jarList.addAll(
-                        project_.extensionClasspathJars(DOKKA_GID, "jekyll-plugin"));
-            }
-            case MARKDOWN -> jarList.addAll(
-                    project_.extensionClasspathJars(DOKKA_GID, "gfm-plugin"));
-            default -> {
-            } // HTML and any future formats need no extra plugin
+            case JAVADOC -> dokkaPlugin = downloadDokkaDependency(sandbox, "javadoc-plugin", "javadoc-plugin");
+
+            case JEKYLL -> dokkaPlugin = downloadDokkaDependency(sandbox, "jekyll-plugin", "jekyll-plugin");
+
+            case MARKDOWN -> dokkaPlugin = downloadDokkaDependency(sandbox, "gfm-plugin", "gfm-plugin");
+
+            default -> dokkaPlugin = downloadDokkaDependency(sandbox, "dokka-base", "default-plugin");
         }
+
+        var jarList = new ArrayList<>(IOTools.findFilesByExtensions(dokkaPlugin, ".jar"));
 
         if (!jarList.isEmpty()) {
             // class path
             args.add("-cp");
-            args.add(jarList.stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
+            args.add(PathTools.joinClasspath(jarList));
         }
 
         // main class
@@ -157,8 +158,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
             args.add("-pluginsClasspath");
             args.add(pluginsClasspath_.stream().map(File::getAbsolutePath).collect(
                     Collectors.joining(DOKKA_LIST_SEPARATOR)));
-        } else if (logger.isLoggable(Level.SEVERE) && !silent()) {
-            logger.severe("No valid plugins jars found or specified.");
         }
 
         // -sourceSet
@@ -253,9 +252,9 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         // -pluginsConfiguration
         if (!pluginsConfiguration_.isEmpty()) {
             args.add("-pluginsConfiguration");
-            var confs = new ArrayList<String>();
-            pluginsConfiguration_.forEach((k, v) -> confs.add(k + "=" + v));
-            args.add(String.join("^^", confs));
+            var config = new ArrayList<String>();
+            pluginsConfiguration_.forEach((k, v) -> config.add(k + "=" + v));
+            args.add(String.join("^^", config));
         }
 
         // -suppressInheritedMembers
@@ -286,9 +285,9 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     @Override
     public DokkaOperation fromProject(BaseProject project) {
         project_ = ObjectTools.requireNonNull(project, "fromProject");
-        if (sourceSet_ == null) {
+        if (sourceSet_.isEmpty()) {
             var src = new File(project.srcMainDirectory(), "kotlin");
-            sourceSet_ = new SourceSet().src(src);
+            sourceSet_.src(src);
             var jars = new ArrayList<File>();
             jars.addAll(project.compileClasspathJars());
             jars.addAll(project.providedClasspathJars());
@@ -985,6 +984,15 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     }
 
     /**
+     * Returns the configurations for the source set.
+     *
+     * @return the source ser configuration
+     */
+    public SourceSet sourceSet() {
+        return sourceSet_;
+    }
+
+    /**
      * Sets the configurations for a source set.
      * <p>
      * Individual and additional configuration of Kotlin source sets.
@@ -1007,5 +1015,24 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     public DokkaOperation suppressInheritedMembers(boolean suppressInheritedMembers) {
         suppressInheritedMembers_ = suppressInheritedMembers;
         return this;
+    }
+
+    private Path downloadDokkaDependency(Sandbox sandbox, String artifactId, @Nullable String pluginDir) {
+        var dependencies = List.of(
+                new Dependency("org.jetbrains.kotlin", "kotlin-stdlib",
+                        new VersionNumber(2, 4, 20)),
+                new Dependency("org.jetbrains.dokka", "dokka-cli", DOKKA_VERSION),
+                new Dependency("org.jetbrains.dokka", "analysis-kotlin-symbols", DOKKA_VERSION),
+                new Dependency("org.jetbrains.dokka", artifactId, DOKKA_VERSION));
+        if (pluginDir != null) {
+            return sandbox.downloadDependencies(
+                    dependencies,
+                    REPOSITORIES,
+                    Path.of(pluginDir));
+        } else {
+            return sandbox.downloadDependencies(
+                    dependencies,
+                    REPOSITORIES);
+        }
     }
 }
