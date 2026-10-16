@@ -84,6 +84,25 @@ public void javadoc() throws ExitStatusException, IOException, InterruptedExcept
 Please check the [Dokka Operation documentation](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#method-summary)
 for all available configuration options.
 
+## Setting the Dokka Version
+
+By default, the extension uses
+[`DokkaOperation.DOKKA_VERSION`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#DOKKA_VERSION).
+You can override this to target a specific Dokka release with the `version()` method:
+
+```java
+new DokkaOperation()
+        .fromProject(this)
+        .version("2.1.0")                       // String form
+        // .version(new VersionNumber(2, 1, 0)) // Version form
+        .loggingLevel(LoggingLevel.INFO)
+        .outputDir(new File(buildDirectory(), "javadoc"))
+        .outputFormat(OutputFormat.JAVADOC)
+        .execute();
+```
+
+> **Warning:** Only Dokka `2.x` releases are supported.
+
 ## Template Project
 
 There is also a [Kotlin Template Project](https://github.com/rife2/kotlin-bld-example) with support for Dokka and the

@@ -29,6 +29,8 @@ import org.junit.jupiter.params.provider.EmptySource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.NullSource;
 import rife.bld.blueprints.BaseProjectBlueprint;
+import rife.bld.dependencies.Version;
+import rife.bld.dependencies.VersionNumber;
 import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
 import rife.bld.operations.exceptions.ExitStatusException;
@@ -129,6 +131,19 @@ class DokkaOperationTest {
         }
 
         @Test
+        void executeConstructProcessCommandListDefaultVersion() {
+            var op = new DokkaOperation()
+                    .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "examples",
+                            "Examples"))
+                    .outputFormat(OutputFormat.HTML);
+
+            var params = op.executeConstructProcessCommandList();
+            var classpath = params.get(params.indexOf("-cp") + 1);
+
+            assertThat(classpath).contains("dokka-cli-" + DokkaOperation.DOKKA_VERSION + ".jar");
+        }
+
+        @Test
         @EnabledOnOs(OS.LINUX)
         void executeConstructProcessCommandListTest() throws IOException {
             var args = Files.readAllLines(Paths.get("src", "test", "resources", "dokka-args.txt"));
@@ -203,7 +218,7 @@ class DokkaOperationTest {
             var path = EXAMPLES.getAbsolutePath();
             var dokkaJar = DokkaOperation.DOKKA_VERSION + ".jar";
             var matches = List.of("java",
-                    "-cp", "examples/lib/bld/.sandbox/bld-dokka/javadoc-plugin/dokka-cli-" + dokkaJar,
+                    "-cp", "examples/lib/.sandbox/bld-dokka/javadoc-plugin/dokka-cli-" + dokkaJar,
                     "org.jetbrains.dokka.MainKt",
                     "-pluginsClasspath", TestUtils.localPath(PATH_1, PATH_2, PATH_3, PATH_4),
                     "-sourceSet", "-classpath " + path + "/foo.jar;" + path + "/bar.jar",
@@ -254,6 +269,21 @@ class DokkaOperationTest {
                     }
                 });
             }
+        }
+
+        @Test
+        void executeConstructProcessCommandListWithVersion() {
+            var version = new VersionNumber(2, 1, 0);
+            var op = new DokkaOperation()
+                    .fromProject(new BaseProjectBlueprint(EXAMPLES, "com.example", "examples",
+                            "Examples"))
+                    .outputFormat(OutputFormat.HTML)
+                    .version(version);
+
+            var params = op.executeConstructProcessCommandList();
+            var classpath = params.get(params.indexOf("-cp") + 1);
+
+            assertThat(classpath).contains("dokka-cli-" + version + ".jar");
         }
 
         @Test
@@ -503,6 +533,31 @@ class DokkaOperationTest {
                 op.pluginsClasspath().clear();
                 op.pluginsClasspathStrings(List.of(FILE_1, FILE_2));
                 assertThat(op.pluginsClasspath()).containsExactly(new File(FILE_1), new File(FILE_2));
+            }
+        }
+
+        @Nested
+        @DisplayName("Version Tests")
+        class VersionTests {
+
+            @Test
+            void defaultVersion() {
+                assertThat(new DokkaOperation().version()).isSameAs(DokkaOperation.DOKKA_VERSION);
+            }
+
+            @Test
+            void versionAsString() {
+                var op = new DokkaOperation();
+                op.version("2.1.0");
+                assertThat(op.version()).isEqualTo(new VersionNumber(2, 1, 0));
+            }
+
+            @Test
+            void versionAsVersionNumber() {
+                var version = new VersionNumber(2, 1, 0);
+                var op = new DokkaOperation();
+                op = op.version(version);
+                assertThat(op.version()).isSameAs(version);
             }
         }
     }
@@ -867,6 +922,21 @@ class DokkaOperationTest {
         @Test
         void sourceSetWithNull() {
             assertThatThrownBy(() -> new DokkaOperation().sourceSet(null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @ParameterizedTest
+        @EmptySource
+        void versionWithEmpty(String arg) {
+            assertThatThrownBy(() -> new DokkaOperation().version(arg))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void versionWithNull() {
+            assertThatThrownBy(() -> new DokkaOperation().version((String) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new DokkaOperation().version((Version) null))
                     .isInstanceOf(NullPointerException.class);
         }
     }

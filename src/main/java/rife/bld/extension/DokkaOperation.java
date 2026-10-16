@@ -58,15 +58,16 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      */
     public static final String DOKKA_LIST_SEPARATOR = ";";
     /**
-     * The Dokka version.
+     * The default Dokka version.
+     * <p>
+     * Currently: 2.2.0
      */
     public static final Version DOKKA_VERSION = new VersionNumber(2, 2, 0);
+
     private static final String INCLUDES = "includes";
     private static final String PLUGINS_CLASSPATH = "pluginsClasspath";
     private static final List<Repository> REPOSITORIES = List.of(Repository.MAVEN_CENTRAL);
     private static final Logger logger = Logger.getLogger(DokkaOperation.class.getName());
-    // LinkedHashMap preserves insertion order for deterministic CLI output; single-threaded builder usage
-    // does not require ConcurrentHashMap here.
     private final Map<String, String> globalLinks_ = new LinkedHashMap<>();
     private final List<String> globalPackageOptions_ = new ArrayList<>();
     private final List<String> globalSrcLinks_ = new ArrayList<>();
@@ -87,6 +88,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     private @Nullable BaseProject project_;
     private SourceSet sourceSet_ = new SourceSet();
     private boolean suppressInheritedMembers_;
+    private Version version_ = DOKKA_VERSION;
 
     /**
      * Performs this operation.
@@ -1017,13 +1019,65 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         return this;
     }
 
+    /**
+     * Sets the Dokka version to use.
+     * <p>
+     * Default is {@link #DOKKA_VERSION}
+     * <p>
+     * <b>Warning:</b> Only Dokka {@code 2.x} releases are supported. The operation resolves
+     * {@code analysis-kotlin-symbols}, launches {@code org.jetbrains.dokka.MainKt} and passes CLI options
+     * that may differ between releases, so other versions may fail or behave unexpectedly.
+     *
+     * @param version the version
+     * @return this operation instance
+     * @throws NullPointerException if {@code version} is {@code null}
+     * @see #version(String)
+     * @see #version()
+     */
+    public DokkaOperation version(Version version) {
+        version_ = ObjectTools.requireNonNull(version, "version");
+        return this;
+    }
+
+    /**
+     * Sets the Dokka version to use.
+     * <p>
+     * Default is {@link #DOKKA_VERSION}
+     * <p>
+     * <b>Warning:</b> Only Dokka {@code 2.x} releases are supported. The operation resolves
+     * {@code analysis-kotlin-symbols}, launches {@code org.jetbrains.dokka.MainKt} and passes CLI options
+     * that may differ between releases, so other versions may fail or behave unexpectedly.
+     *
+     * @param version the version, e.g. {@code 2.1.0}
+     * @return this operation instance
+     * @throws NullPointerException     if {@code version} is {@code null}
+     * @throws IllegalArgumentException if {@code version} is empty or blank
+     * @see #version(Version)
+     * @see #version()
+     */
+    public DokkaOperation version(String version) {
+        version_ = VersionNumber.parse(TextTools.requireNotBlank(version, "version"));
+        return this;
+    }
+
+    /**
+     * Retrieves the Dokka version.
+     *
+     * @return the version
+     * @see #version(Version)
+     * @see #version(String)
+     */
+    public Version version() {
+        return version_;
+    }
+
     private Path downloadDokkaDependency(Sandbox sandbox, String artifactId, @Nullable String pluginDir) {
         var dependencies = List.of(
                 new Dependency("org.jetbrains.kotlin", "kotlin-stdlib",
                         new VersionNumber(2, 4, 20)),
-                new Dependency("org.jetbrains.dokka", "dokka-cli", DOKKA_VERSION),
-                new Dependency("org.jetbrains.dokka", "analysis-kotlin-symbols", DOKKA_VERSION),
-                new Dependency("org.jetbrains.dokka", artifactId, DOKKA_VERSION));
+                new Dependency("org.jetbrains.dokka", "dokka-cli", version_),
+                new Dependency("org.jetbrains.dokka", "analysis-kotlin-symbols", version_),
+                new Dependency("org.jetbrains.dokka", artifactId, version_));
         if (pluginDir != null) {
             return sandbox.downloadDependencies(
                     dependencies,

@@ -51,7 +51,6 @@ public class DokkaOperationBuild extends Project {
                         version(1, 4, 0)))
                 .include(dependency("com.uwyn.rife2", "bld", version(3, 0, 1)));
         scope(provided)
-                .include(dependency("org.jetbrains.dokka", "dokka-cli", dokka))
                 .include(dependency("org.jspecify", "jspecify", "1.0.1"))
                 .include(dependency("com.github.spotbugs", "spotbugs-annotations",
                         version(4, 10, 5)));
