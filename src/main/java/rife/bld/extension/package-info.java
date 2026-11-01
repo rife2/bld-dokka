@@ -18,6 +18,7 @@
  * Provides a <a href="https://rife2.com/">bld</a> extension to generate API documentation with
  * <a href="https://github.com/Kotlin/dokka">Dokka</a> for <a href="https://kotlinlang.org/">Kotlin</a>.
  *
+ * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
 package rife.bld.extension;

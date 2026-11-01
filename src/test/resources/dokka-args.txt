@@ -3,7 +3,6 @@
 -globalLinks
 -globalPackageOptions
 -globalSrcLink
--globalSuppressAnnotatedWith
 -includes
 -loggingLevel
 -moduleName

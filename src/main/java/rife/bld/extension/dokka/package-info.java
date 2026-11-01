@@ -17,6 +17,7 @@
 /**
  * Defines values and data storage for {@link rife.bld.extension.DokkaOperation DokkaOpration}.
  *
+ * @author <a href="https://erik.thauvin.net/">Erik C. Thauvin</a>
  * @since 1.0
  */
 package rife.bld.extension.dokka;

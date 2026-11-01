@@ -18,5 +18,4 @@
 -sourceSetName
 -src
 -srcLink
--suppressAnnotatedWith
 -suppressedFiles
