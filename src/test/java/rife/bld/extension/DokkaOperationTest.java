@@ -33,6 +33,7 @@ import rife.bld.dependencies.Version;
 import rife.bld.dependencies.VersionNumber;
 import rife.bld.extension.dokka.LoggingLevel;
 import rife.bld.extension.dokka.OutputFormat;
+import rife.bld.extension.dokka.SourceSet;
 import rife.bld.operations.exceptions.ExitStatusException;
 import rife.bld.testing.LoggingExtension;
 import rife.bld.testing.TestLogHandler;
@@ -182,13 +183,12 @@ class DokkaOperationTest {
                     .pluginsClasspath(new File(PATH_1))
                     .pluginsClasspath(PATH_2)
                     .pluginsClasspath(List.of(new File(PATH_3), new File(PATH_4)))
-                    .suppressInheritedMembers(true);
-
-            op.sourceSet().classpath(
-                    List.of(
-                            new File("examples/foo.jar"),
-                            new File("examples/bar.jar")
-                    ));
+                    .suppressInheritedMembers(true)
+                    .sourceSet(o -> o.classpath(
+                            List.of(
+                                    new File("examples/foo.jar"),
+                                    new File("examples/bar.jar")
+                            )));
 
             try (var softly = new AutoCloseableSoftAssertions()) {
                 softly.assertThat(op.globalLinks()).as("globalLinks").hasSize(2);
@@ -533,6 +533,26 @@ class DokkaOperationTest {
                 op.pluginsClasspath().clear();
                 op.pluginsClasspathStrings(List.of(FILE_1, FILE_2));
                 assertThat(op.pluginsClasspath()).containsExactly(new File(FILE_1), new File(FILE_2));
+            }
+        }
+
+        @Nested
+        @DisplayName("SourceSet Test")
+        class SourceSetTests {
+
+            private final String setName = "foo";
+
+            @Test
+            void setName() {
+                var op = new DokkaOperation();
+                op.sourceSet(new SourceSet().sourceSetName(setName));
+                assertThat(op.sourceSet().sourceSetName()).isEqualTo(setName);
+            }
+
+            @Test
+            void setNameLambda() {
+                var op = new DokkaOperation().sourceSet(o -> o.sourceSetName(setName));
+                assertThat(op.sourceSet().sourceSetName()).isEqualTo(setName);
             }
         }
 
@@ -921,7 +941,7 @@ class DokkaOperationTest {
 
         @Test
         void sourceSetWithNull() {
-            assertThatThrownBy(() -> new DokkaOperation().sourceSet(null))
+            assertThatThrownBy(() -> new DokkaOperation().sourceSet((SourceSet) null))
                     .isInstanceOf(NullPointerException.class);
         }
 

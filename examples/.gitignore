@@ -8,7 +8,7 @@ lib/compile/
 lib/runtime/
 lib/standalone/
 lib/test/
-lib/.sandbox
+lib/.sandbox/
 
 # IDEA ignores
 

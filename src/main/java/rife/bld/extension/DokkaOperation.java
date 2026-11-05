@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -982,6 +983,23 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     public final DokkaOperation pluginsClasspathStrings(Collection<String> jars) {
         TextTools.requireNotBlank(jars, "pluginsClasspathStrings");
         pluginsClasspath_.addAll(CollectionTools.combineStringsToFiles(jars));
+        return this;
+    }
+
+    /**
+     * Configures the source set options using a lambda expression.
+     * <p>
+     * The consumer mutates the existing {@link SourceSet} instance in place, so chained
+     * setter calls on the passed-in options object apply to this operation.
+     *
+     * @param configurer the configurer for the source set options
+     * @return this operation instance
+     * @throws NullPointerException if {@code configurer} is {@code null}
+     * @see #sourceSet(SourceSet)
+     * @since 1.3
+     */
+    public DokkaOperation sourceSet(Consumer<SourceSet> configurer) {
+        ObjectTools.requireNonNull(configurer, "jvmOptions").accept(sourceSet_);
         return this;
     }
 
