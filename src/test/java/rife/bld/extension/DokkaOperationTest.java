@@ -540,7 +540,7 @@ class DokkaOperationTest {
         @DisplayName("SourceSet Test")
         class SourceSetTests {
 
-            private final String setName = "foo";
+            private static final String setName = "foo";
 
             @Test
             void setName() {

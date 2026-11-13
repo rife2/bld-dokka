@@ -94,15 +94,17 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     /**
      * Performs this operation.
      *
-     * @throws NullPointerException     if {@code project} or {@link #outputFormat() outputformat}
-     *                                  or {@code sourceSet} is {@code null}
-     * @throws IllegalArgumentException if {@link #json() json} is {@code null} or does not exist
+     * @throws NullPointerException     if {@code project} or {@link #outputFormat() outputFormat} is {@code null}
+     * @throws IllegalArgumentException if the {@code sourceSet} is empty, or if {@link #json() json} is set
+     *                                  and the file does not exist
      */
     @Override
     public void execute() throws IOException, InterruptedException, ExitStatusException {
         ObjectTools.requireNonNull(project_, "project");
         ObjectTools.requireNonNull(outputFormat_, "outputFormat");
-        ObjectTools.requireNonNull(sourceSet_, "sourceSet");
+        if (sourceSet_.isEmpty()) {
+            throw new IllegalArgumentException("At least one sourceSet is required.");
+        }
 
         if (json_ != null && !json_.exists()) {
             throw new IllegalArgumentException("JSON config not found: " + json_.getAbsolutePath());
@@ -119,10 +121,9 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
     @Override
     @SuppressFBWarnings("EXS_EXCEPTION_SOFTENING_NO_CHECKED")
     protected List<String> executeConstructProcessCommandList() {
-        if (project_ == null || outputFormat_ == null || sourceSet_.isEmpty()) {
+        if (project_ == null || outputFormat_ == null) {
             if (!silent() && logger.isLoggable(Level.WARNING)) {
-                logger.warning("Missing required fields: project=" + project_ + ", outputFormat=" + outputFormat_
-                        + ", sourceSet=" + sourceSet_);
+                logger.warning("Missing required fields: project=" + project_ + ", outputFormat=" + outputFormat_);
             }
             return Collections.emptyList();
         }
@@ -132,18 +133,17 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         // java
         args.add(javaTool());
 
-        var sandbox = new Sandbox("bld-dokka", project_);
+        var sandbox = new Sandbox("bld-dokka", project_, silent());
 
-        Path dokkaPlugin;
-        switch (outputFormat_) {
-            case JAVADOC -> dokkaPlugin = downloadDokkaDependency(sandbox, "javadoc-plugin", "javadoc-plugin");
+        var dokkaPlugin = switch (outputFormat_) {
+            case JAVADOC -> downloadDokkaDependency(sandbox, "javadoc-plugin", "javadoc-plugin");
 
-            case JEKYLL -> dokkaPlugin = downloadDokkaDependency(sandbox, "jekyll-plugin", "jekyll-plugin");
+            case JEKYLL -> downloadDokkaDependency(sandbox, "jekyll-plugin", "jekyll-plugin");
 
-            case MARKDOWN -> dokkaPlugin = downloadDokkaDependency(sandbox, "gfm-plugin", "gfm-plugin");
+            case MARKDOWN -> downloadDokkaDependency(sandbox, "gfm-plugin", "gfm-plugin");
 
-            default -> dokkaPlugin = downloadDokkaDependency(sandbox, "dokka-base", "default-plugin");
-        }
+            default -> downloadDokkaDependency(sandbox, "dokka-base", "default-plugin");
+        };
 
         var jarList = new ArrayList<>(IOTools.findFilesByExtensions(dokkaPlugin, ".jar"));
 
@@ -281,13 +281,16 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * Configures the operation from a {@link BaseProject}.
      * <p>
      * Sets the {@link #sourceSet sourceSet}, {@link SourceSet#jdkVersion jdkVersion}, {@link #moduleName moduleName}
-     * and {@link SourceSet#classpath(File...) classpath} from the project, if not already set.
+     * and {@link SourceSet#classpath(File...) classpath} from the project.
+     * <p>
+     * The {@code sourceSet}, {@code classpath} and {@code moduleName} are only set when not already configured.
+     * The {@code jdkVersion} is set whenever {@link BaseProject#javaRelease()} is non-{@code null}.
      *
      * @param project the project to configure the operation from
      */
     @Override
     public DokkaOperation fromProject(BaseProject project) {
-        project_ = ObjectTools.requireNonNull(project, "fromProject");
+        project_ = ObjectTools.requireNonNull(project, "project");
         if (sourceSet_.isEmpty()) {
             var src = new File(project.srcMainDirectory(), "kotlin");
             sourceSet_.src(src);
@@ -299,7 +302,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
             }
         }
         if (project.javaRelease() != null) {
-            sourceSet_.jdkVersion(project.javaRelease()); // same here, no assignment needed if it returns this
+            sourceSet_.jdkVersion(project.javaRelease());
         }
         if (moduleName_ == null) {
             moduleName_ = project.name();
@@ -341,7 +344,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @return the documentation links
      */
-    @SuppressFBWarnings("EI_EXPOSE_REP")
     public Map<String, String> globalLinks() {
         return globalLinks_;
     }
@@ -369,7 +371,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      * @throws NullPointerException     if {@code globalLinks} is {@code null}
      * @throws IllegalArgumentException If {@code globalLinks} is empty
-     * @see #globalSrcLink(String...) #globalSrcLink(String...)#globalSrcLink(String...)
+     * @see #globalLinks(String, String)
      */
     public DokkaOperation globalLinks(Map<String, String> globalLinks) {
         ObjectTools.requireNotEmpty(globalLinks, "globalLinks");
@@ -432,7 +434,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @return the package configurations
      */
-    @SuppressFBWarnings("EI_EXPOSE_REP")
     public List<String> globalPackageOptions() {
         return globalPackageOptions_;
     }
@@ -470,7 +471,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @return the source links
      */
-    @SuppressFBWarnings("EI_EXPOSE_REP")
     public List<String> globalSrcLink() {
         return globalSrcLinks_;
     }
@@ -480,7 +480,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @return the annotations
      */
-    @SuppressFBWarnings("EI_EXPOSE_REP")
     public List<String> globalSuppressAnnotatedWith() {
         return globalSuppressAnnotatedWith_;
     }
@@ -505,7 +504,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @param annotations one or more annotation
      * @return this operation instance
      * @throws NullPointerException     if {@code annotations} is {@code null} or contains {@code null} elements
-     * @throws IllegalArgumentException if {@code annoations} is empty or contains blank elements
+     * @throws IllegalArgumentException if {@code annotations} is empty or contains blank elements
      */
     public DokkaOperation globalSuppressAnnotatedWith(String... annotations) {
         TextTools.requireNotBlank("globalSuppressAnnotatedWith", annotations);
@@ -522,8 +521,8 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @param files one or more files
      * @return this operation instance
-     * @throws NullPointerException     if {@code includes} is {@code null}
-     * @throws IllegalArgumentException If {@code includes} is empty
+     * @throws NullPointerException     if {@code files} is {@code null}
+     * @throws IllegalArgumentException If {@code files} is empty
      * @see #includes(Collection)
      */
     public DokkaOperation includes(File... files) {
@@ -594,7 +593,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @return the Markdown files
      */
-    @SuppressFBWarnings("EI_EXPOSE_REP")
     public List<File> includes() {
         return includes_;
     }
@@ -908,7 +906,7 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @return this operation instance
      * @throws NullPointerException     if {@code jars} is {@code null}
      * @throws IllegalArgumentException If {@code jars} is empty
-     * @see #pluginsClasspath(Collection)
+     * @see #pluginsClasspath(File...)
      */
     public final DokkaOperation pluginsClasspath(Collection<File> jars) {
         ObjectTools.requireNotEmpty(jars, PLUGINS_CLASSPATH);
@@ -951,7 +949,6 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      *
      * @return the classpath
      */
-    @SuppressFBWarnings("EI_EXPOSE_REP")
     public List<File> pluginsClasspath() {
         return pluginsClasspath_;
     }
@@ -999,14 +996,14 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
      * @since 1.3
      */
     public DokkaOperation sourceSet(Consumer<SourceSet> configurer) {
-        ObjectTools.requireNonNull(configurer, "jvmOptions").accept(sourceSet_);
+        ObjectTools.requireNonNull(configurer, "configurer").accept(sourceSet_);
         return this;
     }
 
     /**
      * Returns the configurations for the source set.
      *
-     * @return the source ser configuration
+     * @return the source set configuration
      */
     public SourceSet sourceSet() {
         return sourceSet_;
@@ -1089,22 +1086,16 @@ public class DokkaOperation extends AbstractProcessOperation<DokkaOperation> {
         return version_;
     }
 
-    private Path downloadDokkaDependency(Sandbox sandbox, String artifactId, @Nullable String pluginDir) {
+    private Path downloadDokkaDependency(Sandbox sandbox, String artifactId, String pluginDir) {
         var dependencies = List.of(
                 new Dependency("org.jetbrains.kotlin", "kotlin-stdlib",
                         new VersionNumber(2, 4, 20)),
                 new Dependency("org.jetbrains.dokka", "dokka-cli", version_),
                 new Dependency("org.jetbrains.dokka", "analysis-kotlin-symbols", version_),
                 new Dependency("org.jetbrains.dokka", artifactId, version_));
-        if (pluginDir != null) {
-            return sandbox.downloadDependencies(
-                    dependencies,
-                    REPOSITORIES,
-                    Path.of(pluginDir));
-        } else {
-            return sandbox.downloadDependencies(
-                    dependencies,
-                    REPOSITORIES);
-        }
+        return sandbox.downloadDependencies(
+                dependencies,
+                REPOSITORIES,
+                Path.of(pluginDir));
     }
 }

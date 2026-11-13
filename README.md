@@ -18,10 +18,21 @@ For more information, please refer to the [extensions](https://github.com/rife2/
 
 ## Generate API Documentation
 
-To generate a project's documentation in various formats:
+To generate a project's documentation in various formats. The examples below use
+[`fromProject`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#fromProject(rife.bld.BaseProject)),
+[`loggingLevel`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#loggingLevel(rife.bld.extension.dokka.LoggingLevel)),
+[`outputDir`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#outputDir(java.io.File)),
+[`outputFormat`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#outputFormat(rife.bld.extension.dokka.OutputFormat)),
+[`failOnWarning`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#failOnWarning(boolean)), and
+[`execute`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#execute()):
 
 ```java
-import rife.bld.extensions.tools.IOUtils;
+import java.io.File;
+
+import rife.bld.extension.DokkaOperation;
+import rife.bld.extension.dokka.LoggingLevel;
+import rife.bld.extension.dokka.OutputFormat;
+import rife.bld.extension.tools.IOTools;
 
 ...
 
@@ -30,31 +41,31 @@ public void dokkaGfm() throws ExitStatusException, IOException, InterruptedExcep
     new DokkaOperation()
             .fromProject(this)
             .loggingLevel(LoggingLevel.INFO)
-            // Create build/dokka/gfm 
-            .outputDir(IOUtils.resolveFile(buildDirectory(), "dokka", "gfm"))
-            .outputFormat(OutputFormat.MARKDOWN)
+            // Create build/dokka/gfm
+            .outputDir(IOTools.resolveFile(buildDirectory(), "dokka", "gfm"))
+            .outputFormat(OutputFormat.MARKDOWN) // required
             .execute();
 }
 
 @BuildCommand(value = "dokka-html", summary = "Generates documentation in HTML format")
 public void dokkaHtml() throws ExitStatusException, IOException, InterruptedException {
     new DokkaOperation()
-            .fromProject(this)
+            .fromProject(this) // required
             .loggingLevel(LoggingLevel.INFO)
             // Create build/dokka/html
-            .outputDir(IOUtils.resolveFile(buildDirectory(), "dokka", "html"))
-            .outputFormat(OutputFormat.HTML)
+            .outputDir(IOTools.resolveFile(buildDirectory(), "dokka", "html"))
+            .outputFormat(OutputFormat.HTML) // required
             .execute();
 }
 
 @BuildCommand(value = "dokka-jekyll", summary = "Generates documentation in Jekyll flavored markdown format")
 public void dokkaJekyll() throws ExitStatusException, IOException, InterruptedException {
     new DokkaOperation()
-            .fromProject(this)
+            .fromProject(this) // required
             .loggingLevel(LoggingLevel.INFO)
             // Create build/dokka/jekyll
-            .outputDir(IOUtils.resolveFile(buildDirectory(), "dokka", "jekkyl"))
-            .outputFormat(OutputFormat.JEKYLL)
+            .outputDir(IOTools.resolveFile(buildDirectory(), "dokka", "jekyll"))
+            .outputFormat(OutputFormat.JEKYLL) // required
             .execute();
 }
 
@@ -62,12 +73,12 @@ public void dokkaJekyll() throws ExitStatusException, IOException, InterruptedEx
 @Override
 public void javadoc() throws ExitStatusException, IOException, InterruptedException {
     new DokkaOperation()
-            .fromProject(this)
+            .fromProject(this) // required
             .failOnWarning(true)
             .loggingLevel(LoggingLevel.INFO)
             // Create build/javadoc
             .outputDir(new File(buildDirectory(), "javadoc"))
-            .outputFormat(OutputFormat.JAVADOC)
+            .outputFormat(OutputFormat.JAVADOC) // required
             .execute();
 }
 ```
@@ -81,20 +92,39 @@ public void javadoc() throws ExitStatusException, IOException, InterruptedExcept
 
 - [View Examples Project](https://github.com/rife2/bld-dokka/tree/main/examples/)
 
-Please check the [Dokka Operation documentation](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#method-summary)
-for all available configuration options.
+## Configuring Source Sets
+
+[`fromProject`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#fromProject(rife.bld.BaseProject)) seeds the source set with `src/main/kotlin`, plus the project's compile and provided classpath jars, the project's `javaRelease` (as the source set's JDK version), and the project name as the module name. Projects with sources elsewhere — for example mixed Java/Kotlin, generated sources, or extra source roots — must extend the source set themselves.
+
+Call [`fromProject`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#fromProject(rife.bld.BaseProject)) first so the defaults and classpath are populated, then add sources with [`sourceSet(Consumer<SourceSet)`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#sourceSet(java.util.function.Consumer)):
+
+```java
+new DokkaOperation()
+        .fromProject(this) // seeds src/main/kotlin, classpath, jdkVersion, moduleName
+        .sourceSet(ss -> ss
+        .src(new File("src/main/java"))      // mixed Java/Kotlin
+        .src(new File("src/generated/kotlin")))
+        .outputFormat(OutputFormat.JAVADOC)
+        .outputDir(new File(buildDirectory(), "javadoc"))
+        .execute();
+```
+
+For a fully custom source set (no `src/main/kotlin`, no project classpath), pass a configured `SourceSet` to [`sourceSet(SourceSet)`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#sourceSet(rife.bld.extension.dokka.SourceSet)) **before** calling [`fromProject`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#fromProject(rife.bld.BaseProject)) — [`fromProject`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#fromProject(rife.bld.BaseProject)) only adds defaults when the source set is empty, so anything you set first is preserved.
 
 ## Setting the Dokka Version
 
-By default, the extension uses
-[`DokkaOperation.DOKKA_VERSION`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#DOKKA_VERSION).
-You can override this to target a specific Dokka release with the `version()` method:
+By default, the extension downloads the version defined by the
+[`DOKKA_VERSION`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#DOKKA_VERSION)
+constant.
+
+You can override this to target a specific Dokka release with the [`version(String)`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#version(java.lang.String)) method
+(or [`version(Version)`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#version(rife.bld.dependencies.Version))):
 
 ```java
 new DokkaOperation()
         .fromProject(this)
-        .version("2.1.0")                       // String form
-        // .version(new VersionNumber(2, 1, 0)) // Version form
+        .version("2.1.0") // String form
+//      .version(new VersionNumber(2, 1, 0)) // Version form
         .loggingLevel(LoggingLevel.INFO)
         .outputDir(new File(buildDirectory(), "javadoc"))
         .outputFormat(OutputFormat.JAVADOC)
@@ -103,7 +133,22 @@ new DokkaOperation()
 
 > **Warning:** Only Dokka `2.x` releases are supported.
 
+## Other Options
+
+The following are commonly used but not shown in the main examples; see the [API Reference](#api-reference) for the full list.
+
+- [`json(...)`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#json(java.lang.String)) — supply a Dokka JSON configuration file instead of (or alongside) the fluent options.
+- [`offlineMode(boolean)`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#offlineMode(boolean)) — resolve remote links/packages from local caches only.
+- [`failOnWarning(boolean)`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#failOnWarning(boolean)) — fail the build if Dokka emits a warning or error (used in the `javadoc` example above).
+- [`pluginConfigurations(String, String)`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#pluginConfigurations(java.lang.String,java.lang.String)) /
+  [`pluginsClasspath(File...)`](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#pluginsClasspath(java.io.File...)) — configure Dokka plugins and the jars they need.
+
 ## Template Project
 
 There is also a [Kotlin Template Project](https://github.com/rife2/kotlin-bld-example) with support for Dokka and the
 [Detekt](https://github.com/rife2/bld-detekt) extensions.
+
+## API Reference
+
+Please check the [Dokka Operation documentation](https://rife2.github.io/bld-dokka/rife/bld/extension/DokkaOperation.html#method-summary)
+for all available configuration options.
